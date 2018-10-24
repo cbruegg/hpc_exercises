@@ -6,24 +6,24 @@ typedef struct _particle {
 } Particle;
 
 typedef struct _particleList {
-    int count;
-    Particle *particles;
+    const int count;
+    const Particle *const particles;
 } ParticleList;
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err34-c"
 
-ParticleList parse(const char *path) {
-    FILE *f = fopen(path, "r");
+ParticleList parse(const char *const path) {
+    FILE *const f = fopen(path, "r");
     if (f == NULL) {
         printf("File %s could not be opened!\n", path);
         exit(1);
     }
 
-    int count;
+    unsigned int count = 0;
     fscanf(f, "%d\n", &count);
 
-    Particle *particles = malloc(count * sizeof(Particle));
+    Particle *const particles = calloc(count, sizeof(Particle));
     for (int i = 0; i < count; i++) {
         fscanf(f, "%lf ", &particles[i].x);
         fscanf(f, "%lf ", &particles[i].y);
@@ -40,7 +40,7 @@ ParticleList parse(const char *path) {
 
 #pragma clang diagnostic pop
 
-Particle centerOfGravity(ParticleList list) {
+Particle centerOfGravity(const ParticleList list) {
     double x = 0, y = 0, z = 0, totalMass = 0;
     for (int i = 0; i < list.count; i++) {
         Particle p = list.particles[i];
@@ -62,8 +62,8 @@ Particle centerOfGravity(ParticleList list) {
 }
 
 int main() {
-    ParticleList list = parse("lab01-input.txt");
-    Particle center = centerOfGravity(list);
+    const ParticleList list = parse("lab01-input.txt");
+    const Particle center = centerOfGravity(list);
     printf("%e\t%e\t%e\t%e\n", center.x, center.y, center.z, center.mass);
     return 0;
 }
