@@ -16,6 +16,5 @@ tput setaf 2
 ./lab01
 tput sgr0
 
-
 echo "Cleaning up..."
 rm -r cmake-3.12.3-Linux-x86_64
