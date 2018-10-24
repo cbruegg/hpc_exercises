@@ -12,7 +12,10 @@ echo "Running make..."
 make
 
 echo "Executing built binary..."
-tput setaf 2; ./lab01
+tput setaf 2
+./lab01
+tput sgr0
+
 
 echo "Cleaning up..."
 rm -r cmake-3.12.3-Linux-x86_64
