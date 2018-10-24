@@ -4,4 +4,4 @@ module load intel/18.0.3
 
 cmake .
 make
-./hpc
+./lab01
