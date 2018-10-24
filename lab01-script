@@ -2,7 +2,7 @@
 
 module load intel/18.0.3
 
-tar xvf cmake-3.12.3-Linux-x86_64.tar.gz
+tar xf cmake-3.12.3-Linux-x86_64.tar.gz
 ./cmake-3.12.3-Linux-x86_64/bin/cmake .
 make
 ./lab01
