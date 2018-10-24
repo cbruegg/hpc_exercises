@@ -43,7 +43,7 @@ ParticleList parse(const char *const path) {
 Particle centerOfGravity(const ParticleList list) {
     double x = 0, y = 0, z = 0, totalMass = 0;
     for (int i = 0; i < list.count; i++) {
-        Particle p = list.particles[i];
+        const Particle p = list.particles[i];
         x += p.mass * p.x;
         y += p.mass * p.y;
         z += p.mass * p.z;
