@@ -2,8 +2,17 @@
 
 module load intel/18.0.3
 
+echo "Decompressing CMake..."
 tar xf cmake-3.12.3-Linux-x86_64.tar.gz
+
+echo "Running CMake..."
 ./cmake-3.12.3-Linux-x86_64/bin/cmake .
+
+echo "Running make..."
 make
+
+echo "Executing built binary..."
 ./lab01
+
+echo "Cleaning up..."
 rm -r cmake-3.12.3-Linux-x86_64
