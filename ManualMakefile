@@ -18,8 +18,8 @@ ifneq (, $(shell which clang))
 	export OMPI_CC=clang
 endif
 
-CC_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c++17
-CXX_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c11
+CC_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c11
+CXX_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c++17
 
 lab01: lab01.c
 	${CC} ${CC_FLAGS} -o lab01 lab01.c
