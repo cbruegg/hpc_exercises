@@ -6,6 +6,6 @@ echo "Running make..."
 make -f ManualMakefile lab01
 
 echo "Executing built binary..."
-tput setaf 2
+tput setaf 2 2> /dev/null
 ./lab01
-tput sgr0
+tput sgr0 2> /dev/null
