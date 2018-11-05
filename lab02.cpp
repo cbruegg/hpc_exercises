@@ -3,6 +3,7 @@
 #include <mpi.h>
 #include <utility>
 #include <limits>
+#include <iostream>
 
 using namespace std;
 
@@ -16,7 +17,7 @@ public:
         int size;
         MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-        std::cout << "Hello! I'm rank " << rank << " out of " << size << '\n';
+        cout << "Hello! I'm rank " << rank << " out of " << size << '\n';
     }
 };
 
@@ -33,13 +34,13 @@ private:
                 auto number = 1;
                 MPI_Send(&number, 1, MPI_INT32_T, 1, 0, MPI_COMM_WORLD);
                 MPI_Recv(&number, 1, MPI_INT32_T, 1, 0, MPI_COMM_WORLD, nullptr);
-                if (print) { std::cout << "Pong\n"; }
+                if (print) { cout << "Pong\n"; }
                 break;
             }
             case 1: {
                 int number;
                 MPI_Recv(&number, 1, MPI_INT32_T, 0, 0, MPI_COMM_WORLD, nullptr);
-                if (print) { std::cout << "Ping\n"; }
+                if (print) { cout << "Ping\n"; }
                 MPI_Send(&number, 1, MPI_INT32_T, 0, 0, MPI_COMM_WORLD);
                 break;
             }
@@ -53,9 +54,9 @@ public:
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-        if (rank == 0) { std::cout << "\nWarming up latency benchmark...\n"; }
+        if (rank == 0) { cout << "\nWarming up latency benchmark...\n"; }
         sendAndReceive(true);
-        if (rank == 0) { std::cout << "Warmup complete.\n"; }
+        if (rank == 0) { cout << "Warmup complete.\n"; }
     }
 
     static void benchmark() {
@@ -69,7 +70,7 @@ public:
 
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        if (rank == 0) { std::cout << "Time per transmission (back and forth): " << transmissionTimeMicroS << " µs\n\n"; }
+        if (rank == 0) { cout << "Time per transmission (back and forth): " << transmissionTimeMicroS << " µs\n\n"; }
     }
 };
 
@@ -92,12 +93,12 @@ private:
             case 0: {
                 MPI_Send(arr->data(), size, MPI_INT32_T, 1, 0, MPI_COMM_WORLD);
                 MPI_Recv(arr->data(), size, MPI_INT32_T, 1, 0, MPI_COMM_WORLD, nullptr);
-                if (print) { std::cout << "Pong\n"; }
+                if (print) { cout << "Pong\n"; }
                 break;
             }
             case 1: {
                 MPI_Recv(arr->data(), size, MPI_INT32_T, 0, 0, MPI_COMM_WORLD, nullptr);
-                if (print) { std::cout << "Ping\n"; }
+                if (print) { cout << "Ping\n"; }
                 MPI_Send(arr->data(), size, MPI_INT32_T, 0, 0, MPI_COMM_WORLD);
                 break;
             }
@@ -111,9 +112,9 @@ public:
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-        if (rank == 0) { std::cout << "Warming up blob benchmark...\n"; }
+        if (rank == 0) { cout << "Warming up blob benchmark...\n"; }
         sendAndReceive(move(arr), true);
-        if (rank == 0) { std::cout << "Warmup complete.\n"; }
+        if (rank == 0) { cout << "Warmup complete.\n"; }
     }
 
     static void benchmark(shared_ptr<vector<int32_t>> arr) {
@@ -130,7 +131,7 @@ public:
 
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        if (rank == 0) { std::cout << "One-way transmission speed: " << gbPerS << " Gb/s\n"; }
+        if (rank == 0) { cout << "One-way transmission speed: " << gbPerS << " Gb/s\n"; }
     }
 };
 
