@@ -135,8 +135,7 @@ public:
     }
 };
 
-//const auto BENCHMARK_BYTES = 32 * 1048576 /* 1 MiB */;
-const auto BENCHMARK_BYTES = 1 * 1048576L /* 1 MiB */;
+const auto MIB = 1048576UL /* 1 MiB */;
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
@@ -147,11 +146,14 @@ int main(int argc, char *argv[]) {
     PingPong::warmup();
     PingPong::benchmark();
 
-    auto arr = make_shared<vector<int32_t >>(vector<int32_t>());
-    arr->resize(BENCHMARK_BYTES / 8);
-    std::fill(arr->begin(), arr->end(), 0);
-    BlobBenchmark::warmup(arr);
-    BlobBenchmark::benchmark(arr);
+    for (const auto benchmarkSize : {1 * MIB, 2 * MIB, 4 * MIB, 16 * MIB,
+                                     32 * MIB}) {
+        auto arr = make_shared<vector<int32_t >>(vector<int32_t>());
+        arr->resize(benchmarkSize / 8);
+        std::fill(arr->begin(), arr->end(), 0);
+        BlobBenchmark::warmup(arr);
+        BlobBenchmark::benchmark(arr);
+    }
 
     MPI_Finalize();
     return 0;
