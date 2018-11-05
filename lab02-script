@@ -7,5 +7,16 @@ make -f ManualMakefile lab02
 
 echo "Executing built binary..."
 tput setaf 2 2> /dev/null
-mpirun -n 4 ./lab02
+
+if hash srun 2>/dev/null; then
+    case "$NORESERV" in
+        1) RES="";;
+        *) RES="--reservation=hpclco";;
+    esac
+    srun -t1 -A hpclco $RES -N2 ./your_program
+else
+    mpirun -n 4 ./lab02
+fi
+
+
 tput sgr0 2> /dev/null
