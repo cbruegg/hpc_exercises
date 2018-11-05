@@ -141,6 +141,7 @@ int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
 
     HelloWorld::sayHello();
+    flush(cout);
     MPI_Barrier(MPI_COMM_WORLD);
 
     PingPong::warmup();
