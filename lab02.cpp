@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
     PingPong::warmup();
     PingPong::benchmark();
 
-    for (const auto benchmarkSize : {1, 2, 4, 16, 32, 64, 128, 256, 512}) {
+    for (const auto benchmarkSize : {32}) {
         auto arr = make_shared<vector<int32_t >>(vector<int32_t>());
         arr->resize(benchmarkSize * MIB / 8);
         std::fill(arr->begin(), arr->end(), 0);
