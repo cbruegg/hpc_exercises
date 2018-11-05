@@ -1,0 +1,11 @@
+#!/bin/bash
+
+module load intel/18.0.3
+
+echo "Running make..."
+make -f ManualMakefile lab02
+
+echo "Executing built binary..."
+tput setaf 2
+mpirun -n 4 ./lab02
+tput sgr0

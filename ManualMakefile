@@ -1,0 +1,31 @@
+ifeq (, $(shell which mpiicpc))
+	CXX := mpicxx
+else
+	CXX := mpiicpc
+endif
+
+ifeq (, $(shell which mpiicc))
+	CC := mpicc
+else
+	CC := mpiicc
+endif
+
+ifneq (, $(shell which clang++))
+	export OMPI_CXX=clang++
+endif
+
+ifneq (, $(shell which clang))
+	export OMPI_CC=clang
+endif
+
+CC_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors
+CXX_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors
+
+lab01: lab01.c
+	${CC} ${CC_FLAGS} -o lab01 lab01.c
+
+lab02: lab02.cpp
+	${CXX} ${CXX_FLAGS} -o lab02 lab02.cpp
+
+clean:
+	rm -f lab01 lab02
