@@ -33,13 +33,13 @@ private:
             case 0: {
                 auto number = 1;
                 MPI_Send(&number, 1, MPI_INT32_T, 1, 0, MPI_COMM_WORLD);
-                MPI_Recv(&number, 1, MPI_INT32_T, 1, 0, MPI_COMM_WORLD, nullptr);
+                MPI_Recv(&number, 1, MPI_INT32_T, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 if (print) { cout << "Pong\n"; }
                 break;
             }
             case 1: {
                 int number;
-                MPI_Recv(&number, 1, MPI_INT32_T, 0, 0, MPI_COMM_WORLD, nullptr);
+                MPI_Recv(&number, 1, MPI_INT32_T, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 if (print) { cout << "Ping\n"; }
                 MPI_Send(&number, 1, MPI_INT32_T, 0, 0, MPI_COMM_WORLD);
                 break;
@@ -92,12 +92,12 @@ private:
         switch (rank) {
             case 0: {
                 MPI_Send(arr->data(), size, MPI_INT32_T, 1, 0, MPI_COMM_WORLD);
-                MPI_Recv(arr->data(), size, MPI_INT32_T, 1, 0, MPI_COMM_WORLD, nullptr);
+                MPI_Recv(arr->data(), size, MPI_INT32_T, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 if (print) { cout << "Pong\n"; }
                 break;
             }
             case 1: {
-                MPI_Recv(arr->data(), size, MPI_INT32_T, 0, 0, MPI_COMM_WORLD, nullptr);
+                MPI_Recv(arr->data(), size, MPI_INT32_T, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 if (print) { cout << "Ping\n"; }
                 MPI_Send(arr->data(), size, MPI_INT32_T, 0, 0, MPI_COMM_WORLD);
                 break;
