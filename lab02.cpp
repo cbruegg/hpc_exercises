@@ -32,16 +32,16 @@ private:
         switch (rank) {
             case 0: {
                 auto number = 1;
-                MPI_Send(&number, 1, MPI_INT32_T, 1, 0, MPI_COMM_WORLD);
-                MPI_Recv(&number, 1, MPI_INT32_T, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Send(&number, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+                MPI_Recv(&number, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 if (print) { cout << "Pong\n"; }
                 break;
             }
             case 1: {
                 int number;
-                MPI_Recv(&number, 1, MPI_INT32_T, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Recv(&number, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 if (print) { cout << "Ping\n"; }
-                MPI_Send(&number, 1, MPI_INT32_T, 0, 0, MPI_COMM_WORLD);
+                MPI_Send(&number, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
                 break;
             }
             default:
@@ -135,8 +135,8 @@ public:
     }
 };
 
-const auto BENCHMARK_BYTES = 32 * 1048576 /* 1 MiB */;
-//const auto BENCHMARK_BYTES = 1024 * 1048576L /* 1 MiB */;
+//const auto BENCHMARK_BYTES = 32 * 1048576 /* 1 MiB */;
+const auto BENCHMARK_BYTES = 32 * 1048576L /* 1 MiB */ - 1;
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
