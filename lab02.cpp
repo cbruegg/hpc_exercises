@@ -136,7 +136,7 @@ public:
 };
 
 //const auto BENCHMARK_BYTES = 32 * 1048576 /* 1 MiB */;
-const auto BENCHMARK_BYTES = 32 * 1048576L /* 1 MiB */ - 1;
+const auto BENCHMARK_BYTES = 1 * 1048576L /* 1 MiB */;
 
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
