@@ -9,7 +9,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
 
-    cout << "sdfdf";
+    cout << "Not implemented yet" << endl;
 
     MPI_Finalize();
     return 0;
