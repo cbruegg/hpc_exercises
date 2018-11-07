@@ -43,7 +43,7 @@ uint64_t readTossesFromCinOrExit() {
         return stou64(line);
     }
     catch (invalid_argument &e) {
-        cout << "Invalid input!" << endl;
+        cerr << "Invalid input!" << endl;
         exit(EXIT_FAILURE);
     };
 }
