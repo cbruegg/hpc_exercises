@@ -1,0 +1,29 @@
+#!/bin/bash
+
+module load intel/18.0.3
+
+echo "Running make..."
+make -f ManualMakefile lab03_1
+make -f ManualMakefile lab03_2
+
+echo "Executing built binary..."
+tput setaf 2 2> /dev/null
+
+if hash srun 2>/dev/null; then
+    case "$NORESERV" in
+        1) RES="";;
+        *) RES="--reservation=hpclco";;
+    esac
+    echo "\nExercise 1:"
+    srun -t1 -A hpclco $RES ./lab03_1
+    echo "\nExercise 2:"
+    srun -t1 -A hpclco $RES ./lab03_2
+else
+    echo "\nExercise 1:"
+    mpirun -n 4 ./lab03_1
+    echo "\nExercise 2:"
+    mpirun -n 4 ./lab03_2
+fi
+
+
+tput sgr0 2> /dev/null

@@ -20,3 +20,5 @@ add_compile_options("-pedantic-errors")
 
 add_executable(lab01 lab01.c)
 add_executable(lab02 lab02.cpp)
+add_executable(lab03_1 lab03_1.cpp)
+add_executable(lab03_2 lab03_2.cpp)
