@@ -26,6 +26,35 @@ public:
                                                                             targetSize(targetSize) {}
 };
 
+// Reimplemented std::complex as I was not sure whether usage of that was allowed
+class complex {
+private:
+    double _real;
+    double _imag;
+public:
+
+    complex(const double real, const double imag) : _real(real), _imag(imag) {}
+
+    complex operator+(const complex other) {
+        return complex(_real + other._real, _imag + other._imag);
+    }
+
+    complex operator*(const complex other) {
+        return complex(_real * other._real - _imag * other._imag, _real * other._imag + _imag * other._real);
+    }
+
+    double real() const {
+        return _real;
+    }
+
+    double imag() const {
+        return _imag;
+    }
+};
+
+bool isMandelbrotCandidate(complex c) {
+    return c.real() * c.real() + c.imag() * c.imag() <= 4;
+}
 
 int checkMandelbrot(double real, double imag, int cutoff) {
     /*
@@ -61,10 +90,14 @@ int checkMandelbrot(double real, double imag, int cutoff) {
            - Looks like the set in Wikipedia.
    */
 
+    auto number = complex(real, imag);
+    auto zi = complex(0, 0);
+    int i;
+    for (i = 1; i < cutoff && isMandelbrotCandidate(zi); i++) {
+        zi = zi * zi + number;
+    }
 
-    if (real > imag) return cutoff; //<-- This needs to be modified.
-    return 0;                      //<-- This needs to be modified.
-
+    return i;
 }
 
 
@@ -72,7 +105,6 @@ void HandleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX,
                  int maxNumberIterations) {
     for (auto v = 0; v < block.targetSize; ++v) {
         for (auto b = 0; b < block.targetSize; ++b) {
-
             auto result = checkMandelbrot(
                     block.x + block.size * b / block.targetSize, block.y + block.size * v / block.targetSize,
                     maxNumberIterations
@@ -127,9 +159,6 @@ int main(int argc, char *argv[]) {
     auto posY = -1.0;
     auto size = 2.0;
     auto maxNumberIterations = 100;
-
-    // TODO remove
-//    maxNumberIterations = 1;
 
     //MPI seems to do fine with providing these to all participating processes
     if (argc >= 4) {
