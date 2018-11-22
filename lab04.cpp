@@ -12,7 +12,7 @@ using namespace std;
 	It represents a square area of the fractal to be rendered with the upper left point at x,y and lengths of size.
 	it also contains information as to where to insert the calculated pixels as a starting shift (targetPos) and a size in pixels (targetSize)
 */
-class Block {
+class Block final {
 public:
     const double x;//Upper left point
     const double y;//Upper left point
@@ -27,7 +27,7 @@ public:
 };
 
 // Reimplemented std::complex as I was not sure whether usage of that was allowed
-class complex {
+class complex final  {
 private:
     double _real;
     double _imag;
@@ -98,6 +98,8 @@ int checkMandelbrot(double real, double imag, int cutoff) {
     }
 
     return i;
+
+    // TODO What to return if still isMandelbrotCandidate after cutoff?
 }
 
 
