@@ -149,7 +149,7 @@ void handleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX,
         }
     }
 
-    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, window);
+    MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, window);
     for (auto v = 0; v < block.targetSize; ++v) {
         MPI_Put(localResults.data() + v * block.targetSize,
                 block.targetSize,
@@ -200,7 +200,8 @@ int main(int argc, char *argv[]) {
         posX = strtod(argv[1], nullptr);
         posY = strtod(argv[2], nullptr);
         size = strtod(argv[3], nullptr);
-    } else if (argc >= 5) {
+    }
+    if (argc >= 5) {
         maxNumberIterations = stoi(argv[4]);
     }
 
