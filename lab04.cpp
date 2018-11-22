@@ -5,6 +5,8 @@
 #include <memory>
 #include <vector>
 #include <ostream>
+#include <random>
+#include <algorithm>
 
 using namespace std;
 
@@ -15,13 +17,13 @@ using namespace std;
 */
 class Block final {
 public:
-    const double x;//Upper left point
-    const double y;//Upper left point
-    const double size;
+    double x;//Upper left point
+    double y;//Upper left point
+    double size;
     //Output pixels
-    const int targetPos;
-    const int targetSize;//Assumes a square!
-    const int stride;
+    int targetPos;
+    int targetSize;//Assumes a square!
+    int stride;
 
     Block(double x, double y, double size, int targetPos, int targetSize, int stride = 0) : x(x), y(y), size(size),
                                                                                             targetPos(targetPos),
@@ -228,10 +230,7 @@ int main(int argc, char *argv[]) {
 
     if (myRank == 0) {
         //Allocate memory and make available to others
-
         MPI_Aint siz = outputSizePixels * outputSizePixels * sizeof(int);
-
-
         MPI_Alloc_mem(siz, MPI_INFO_NULL, &shared_data);
         MPI_Win_create(shared_data, siz, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &window);
     } else {
@@ -240,14 +239,18 @@ int main(int argc, char *argv[]) {
     }
 
     Block masterBlock(posX, posY, size, 0, outputSizePixels);
+    auto blocks = masterBlock.divide(totalRanks);
 
-    if (myRank == 1) {
-        auto blocks = masterBlock.divide(4);
-        for (auto subBlock : blocks) {
-            auto localResults = vector<int>(subBlock.targetSize * subBlock.targetSize);
-            handleBlock(myRank, subBlock, window, subBlock.targetSize, localResults, maxNumberIterations);
-        }
+    auto seed = static_cast<int>(time(nullptr));
+    MPI_Bcast(&seed, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
+    // Since the seed was broadcast, this shuffle is deterministic across nodes
+    shuffle(blocks.begin(), blocks.end(), default_random_engine{seed});
+
+    vector<Block> localBlocks(blocks.begin() + myRank * totalRanks, blocks.begin() + (myRank + 1) * totalRanks);
+    for (auto localBlock : localBlocks) {
+        auto localResults = vector<int>(localBlock.targetSize * localBlock.targetSize);
+        handleBlock(myRank, localBlock, window, localBlock.targetSize, localResults, maxNumberIterations);
     }
 
     //Before outputting the result we wait for all the values
