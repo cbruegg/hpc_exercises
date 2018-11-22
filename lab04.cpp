@@ -132,8 +132,6 @@ int checkMandelbrot(double real, double imag, int cutoff) {
     }
 
     return i;
-
-    // TODO What to return if still isMandelbrotCandidate after cutoff?
 }
 
 
