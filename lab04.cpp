@@ -135,8 +135,7 @@ int checkMandelbrot(double real, double imag, int cutoff) {
 }
 
 
-void handleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX, vector<int> localResults,
-                 int maxNumberIterations) {
+void handleBlock(int myRank, Block block, MPI_Win const &window, vector<int> localResults, int maxNumberIterations) {
     for (auto v = 0; v < block.targetSize; ++v) {
         for (auto b = 0; b < block.targetSize; ++b) {
             auto result = checkMandelbrot(
@@ -179,7 +178,6 @@ void handleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX,
 
 class Main {
 public:
-    static const constexpr unsigned char white[3] = {255, 255, 255};
     static const constexpr unsigned char black[3] = {0, 0, 0};
 };
 
@@ -249,7 +247,7 @@ int main(int argc, char *argv[]) {
     vector<Block> localBlocks(blocks.begin() + myRank * totalRanks, blocks.begin() + (myRank + 1) * totalRanks);
     for (auto localBlock : localBlocks) {
         auto localResults = vector<int>(localBlock.targetSize * localBlock.targetSize);
-        handleBlock(myRank, localBlock, window, localBlock.targetSize, localResults, maxNumberIterations);
+        handleBlock(myRank, localBlock, window, localResults, maxNumberIterations);
     }
 
     //Before outputting the result we wait for all the values
@@ -277,7 +275,6 @@ int main(int argc, char *argv[]) {
 
         fclose(fp);
     }
-
 
     MPI_Win_free(&window);
     MPI_Finalize();
