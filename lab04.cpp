@@ -28,24 +28,20 @@ public:
                                                                                             targetSize(targetSize),
                                                                                             stride(stride) {}
 
-    vector<Block> divide(int min) {
-        auto actual = static_cast<int>(pow(4, ceil(log(min) / (2 * log(2)))));
-        auto actualSqrt = static_cast<int>(sqrt(actual));
-
-        auto newSize = size / actualSqrt;
-        auto newTargetSize = targetSize / actualSqrt;
+    vector<Block> divide(int sqrtN) {
+        auto newSize = size / sqrtN;
+        auto newTargetSize = targetSize / sqrtN;
 
         vector<Block> blocks;
-        for (auto x = 0; x < actualSqrt; x++) {
-            for (auto y = 0; y < actualSqrt; y++) {
+        for (auto x = 0; x < sqrtN; x++) {
+            for (auto y = 0; y < sqrtN; y++) {
                 Block block(
                         this->x + x * newSize,
                         this->y + y * newSize,
                         newSize,
-                        targetPos + x * newTargetSize * newTargetSize +
-                        (y * newTargetSize * newTargetSize * actualSqrt),
+                        targetPos + x * newTargetSize + (y * targetSize * newTargetSize),
                         newTargetSize,
-                        x * newTargetSize
+                        targetSize - newTargetSize
                 );
 
                 blocks.push_back(block);
@@ -144,7 +140,8 @@ void handleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX,
     for (auto v = 0; v < block.targetSize; ++v) {
         for (auto b = 0; b < block.targetSize; ++b) {
             auto result = checkMandelbrot(
-                    block.x + block.size * b / block.targetSize, block.y + block.size * v / block.targetSize,
+                    block.x + block.size * b / block.targetSize,
+                    block.y + block.size * v / block.targetSize,
                     maxNumberIterations
             );
 
@@ -154,12 +151,11 @@ void handleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX,
 
     MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, window);
     for (auto v = 0; v < block.targetSize; ++v) {
-        auto offset = v * block.targetSize + v * block.stride;
-        MPI_Put(localResults.data() + offset,
+        MPI_Put(localResults.data() + v * block.targetSize,
                 block.targetSize,
                 MPI_INT,
                 0,
-                block.targetPos + offset,
+                block.targetPos + v * (block.targetSize + block.stride),
                 block.targetSize,
                 MPI_INT,
                 window);
@@ -244,23 +240,15 @@ int main(int argc, char *argv[]) {
     }
 
     Block masterBlock(posX, posY, size, 0, outputSizePixels);
-    if (myRank == 1) {
-        cout << "Master block: " << masterBlock << endl;
-    }
 
     if (myRank == 1) {
-        auto blocks = masterBlock.divide(2);
+        auto blocks = masterBlock.divide(4);
         for (auto subBlock : blocks) {
-            cout << subBlock << endl;
             auto localResults = vector<int>(subBlock.targetSize * subBlock.targetSize);
             handleBlock(myRank, subBlock, window, subBlock.targetSize, localResults, maxNumberIterations);
         }
 
-        // TODO Remove
-//        auto localResults = vector<int>(masterBlock.targetSize * masterBlock.targetSize);
-//        handleBlock(myRank, masterBlock, window, masterBlock.targetSize, localResults, maxNumberIterations);
     }
-
 
     //Before outputting the result we wait for all the values
     MPI_Barrier(MPI_COMM_WORLD);
