@@ -4,6 +4,7 @@
 #include <math.h>
 #include <memory>
 #include <vector>
+#include <ostream>
 
 using namespace std;
 
@@ -12,7 +13,7 @@ using namespace std;
 	It represents a square area of the fractal to be rendered with the upper left point at x,y and lengths of size.
 	it also contains information as to where to insert the calculated pixels as a starting shift (targetPos) and a size in pixels (targetSize)
 */
-class Block {
+class Block final {
 public:
     const double x;//Upper left point
     const double y;//Upper left point
@@ -20,14 +21,49 @@ public:
     //Output pixels
     const int targetPos;
     const int targetSize;//Assumes a square!
+    const int stride;
 
-    Block(double x, double y, double size, int targetPos, int targetSize) : x(x), y(y), size(size),
-                                                                            targetPos(targetPos),
-                                                                            targetSize(targetSize) {}
+    Block(double x, double y, double size, int targetPos, int targetSize, int stride = 0) : x(x), y(y), size(size),
+                                                                                            targetPos(targetPos),
+                                                                                            targetSize(targetSize),
+                                                                                            stride(stride) {}
+
+    vector<Block> divide(int min) {
+        auto actual = static_cast<int>(pow(4, ceil(log(min) / (2 * log(2)))));
+        auto actualSqrt = static_cast<int>(sqrt(actual));
+
+        auto newSize = size / actualSqrt;
+        auto newTargetSize = targetSize / actualSqrt;
+
+        vector<Block> blocks;
+        for (auto x = 0; x < actualSqrt; x++) {
+            for (auto y = 0; y < actualSqrt; y++) {
+                Block block(
+                        this->x + x * newSize,
+                        this->y + y * newSize,
+                        newSize,
+                        targetPos + x * newTargetSize * newTargetSize +
+                        (y * newTargetSize * newTargetSize * actualSqrt),
+                        newTargetSize,
+                        x * newTargetSize
+                );
+
+                blocks.push_back(block);
+            }
+        }
+
+        return blocks;
+    }
+
+    friend ostream &operator<<(ostream &os, const Block &block) {
+        os << "x: " << block.x << " y: " << block.y << " size: " << block.size << " targetPos: " << block.targetPos
+           << " targetSize: " << block.targetSize << " stride: " << block.stride;
+        return os;
+    }
 };
 
 // Reimplemented std::complex as I was not sure whether usage of that was allowed
-class complex {
+class complex final {
 private:
     double _real;
     double _imag;
@@ -98,10 +134,12 @@ int checkMandelbrot(double real, double imag, int cutoff) {
     }
 
     return i;
+
+    // TODO What to return if still isMandelbrotCandidate after cutoff?
 }
 
 
-void HandleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX, vector<int> localResults,
+void handleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX, vector<int> localResults,
                  int maxNumberIterations) {
     for (auto v = 0; v < block.targetSize; ++v) {
         for (auto b = 0; b < block.targetSize; ++b) {
@@ -116,12 +154,13 @@ void HandleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX,
 
     MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, window);
     for (auto v = 0; v < block.targetSize; ++v) {
-        MPI_Put(localResults.data() + v * totalSizeX,
-                totalSizeX,
+        auto offset = v * block.targetSize + v * block.stride;
+        MPI_Put(localResults.data() + offset,
+                block.targetSize,
                 MPI_INT,
                 0,
-                block.targetPos + v * totalSizeX,
-                totalSizeX,
+                block.targetPos + offset,
+                block.targetSize,
                 MPI_INT,
                 window);
 
@@ -169,7 +208,6 @@ int main(int argc, char *argv[]) {
         maxNumberIterations = stoi(argv[4]);
     }
 
-
     MPI_Init(&argc, &argv);
     int myRank, totalRanks;
     MPI_Comm_size(MPI_COMM_WORLD, &totalRanks);
@@ -205,31 +243,22 @@ int main(int argc, char *argv[]) {
         MPI_Win_create(shared_data, 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &window);
     }
 
-    auto blocksPerDirection = 1;
-//    auto totalBlocks = blocksPerDirection * blocksPerDirection;
-    auto blockPixelSize = outputSizePixels / blocksPerDirection;
-    auto bufferSize = blockPixelSize * blockPixelSize;
+    Block masterBlock(posX, posY, size, 0, outputSizePixels);
+    if (myRank == 1) {
+        cout << "Master block: " << masterBlock << endl;
+    }
 
-    {
-        //Allocate a block of memory to keep our local results until sending
-        auto myResultVals = vector<int>(bufferSize);
-
-        if (myRank == 1) {
-            auto blockCoordX = 0; //In full blocks
-            auto blockCoordY = 0;
-
-            auto x = posX + size / blocksPerDirection * blockCoordX; //upper left corner of the block we want to manage
-            auto y = posY + size / blocksPerDirection * blockCoordY;
-            auto blockSize = size / blocksPerDirection;
-
-            auto targetSize = blockPixelSize;  //in pixels
-            //Start of the first row in our target matrix.
-            //Second row will start with an offset of +outputSizePixels, etc.
-            auto targetPos = targetSize * (blockCoordX + blockCoordY * outputSizePixels);
-
-            Block block(x, y, blockSize, targetPos, targetSize);
-            HandleBlock(myRank, block, window, outputSizePixels, myResultVals, maxNumberIterations);
+    if (myRank == 1) {
+        auto blocks = masterBlock.divide(2);
+        for (auto subBlock : blocks) {
+            cout << subBlock << endl;
+            auto localResults = vector<int>(subBlock.targetSize * subBlock.targetSize);
+            handleBlock(myRank, subBlock, window, subBlock.targetSize, localResults, maxNumberIterations);
         }
+
+        // TODO Remove
+//        auto localResults = vector<int>(masterBlock.targetSize * masterBlock.targetSize);
+//        handleBlock(myRank, masterBlock, window, masterBlock.targetSize, localResults, maxNumberIterations);
     }
 
 
