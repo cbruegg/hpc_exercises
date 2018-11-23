@@ -4,6 +4,9 @@
 #include <math.h>
 #include <memory>
 #include <vector>
+#include <ostream>
+#include <random>
+#include <algorithm>
 
 using namespace std;
 
@@ -14,20 +17,51 @@ using namespace std;
 */
 class Block final {
 public:
-    const double x;//Upper left point
-    const double y;//Upper left point
-    const double size;
+    double x;//Upper left point
+    double y;//Upper left point
+    double size;
     //Output pixels
-    const int targetPos;
-    const int targetSize;//Assumes a square!
+    int targetPos;
+    int targetSize;//Assumes a square!
+    int stride;
 
-    Block(double x, double y, double size, int targetPos, int targetSize) : x(x), y(y), size(size),
-                                                                            targetPos(targetPos),
-                                                                            targetSize(targetSize) {}
+    Block(double x, double y, double size, int targetPos, int targetSize, int stride = 0) : x(x), y(y), size(size),
+                                                                                            targetPos(targetPos),
+                                                                                            targetSize(targetSize),
+                                                                                            stride(stride) {}
+
+    vector<Block> divide(int sqrtN) {
+        auto newSize = size / sqrtN;
+        auto newTargetSize = targetSize / sqrtN;
+
+        vector<Block> blocks;
+        for (auto x = 0; x < sqrtN; x++) {
+            for (auto y = 0; y < sqrtN; y++) {
+                Block block(
+                        this->x + x * newSize,
+                        this->y + y * newSize,
+                        newSize,
+                        targetPos + x * newTargetSize + (y * targetSize * newTargetSize),
+                        newTargetSize,
+                        targetSize - newTargetSize
+                );
+
+                blocks.push_back(block);
+            }
+        }
+
+        return blocks;
+    }
+
+    friend ostream &operator<<(ostream &os, const Block &block) {
+        os << "x: " << block.x << " y: " << block.y << " size: " << block.size << " targetPos: " << block.targetPos
+           << " targetSize: " << block.targetSize << " stride: " << block.stride;
+        return os;
+    }
 };
 
 // Reimplemented std::complex as I was not sure whether usage of that was allowed
-class complex final  {
+class complex final {
 private:
     double _real;
     double _imag;
@@ -98,17 +132,15 @@ int checkMandelbrot(double real, double imag, int cutoff) {
     }
 
     return i;
-
-    // TODO What to return if still isMandelbrotCandidate after cutoff?
 }
 
 
-void HandleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX, vector<int> localResults,
-                 int maxNumberIterations) {
+void handleBlock(int myRank, Block block, MPI_Win const &window, vector<int> localResults, int maxNumberIterations) {
     for (auto v = 0; v < block.targetSize; ++v) {
         for (auto b = 0; b < block.targetSize; ++b) {
             auto result = checkMandelbrot(
-                    block.x + block.size * b / block.targetSize, block.y + block.size * v / block.targetSize,
+                    block.x + block.size * b / block.targetSize,
+                    block.y + block.size * v / block.targetSize,
                     maxNumberIterations
             );
 
@@ -116,14 +148,14 @@ void HandleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX,
         }
     }
 
-    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, window);
+    MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, window);
     for (auto v = 0; v < block.targetSize; ++v) {
-        MPI_Put(localResults.data() + v * totalSizeX,
-                totalSizeX,
+        MPI_Put(localResults.data() + v * block.targetSize,
+                block.targetSize,
                 MPI_INT,
                 0,
-                block.targetPos + v * totalSizeX,
-                totalSizeX,
+                block.targetPos + v * (block.targetSize + block.stride),
+                block.targetSize,
                 MPI_INT,
                 window);
 
@@ -146,7 +178,6 @@ void HandleBlock(int myRank, Block block, MPI_Win const &window, int totalSizeX,
 
 class Main {
 public:
-    static const constexpr unsigned char white[3] = {255, 255, 255};
     static const constexpr unsigned char black[3] = {0, 0, 0};
 };
 
@@ -167,10 +198,10 @@ int main(int argc, char *argv[]) {
         posX = strtod(argv[1], nullptr);
         posY = strtod(argv[2], nullptr);
         size = strtod(argv[3], nullptr);
-    } else if (argc >= 5) {
+    }
+    if (argc >= 5) {
         maxNumberIterations = stoi(argv[4]);
     }
-
 
     MPI_Init(&argc, &argv);
     int myRank, totalRanks;
@@ -196,10 +227,7 @@ int main(int argc, char *argv[]) {
 
     if (myRank == 0) {
         //Allocate memory and make available to others
-
         MPI_Aint siz = outputSizePixels * outputSizePixels * sizeof(int);
-
-
         MPI_Alloc_mem(siz, MPI_INFO_NULL, &shared_data);
         MPI_Win_create(shared_data, siz, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &window);
     } else {
@@ -207,33 +235,20 @@ int main(int argc, char *argv[]) {
         MPI_Win_create(shared_data, 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &window);
     }
 
-    auto blocksPerDirection = 1;
-//    auto totalBlocks = blocksPerDirection * blocksPerDirection;
-    auto blockPixelSize = outputSizePixels / blocksPerDirection;
-    auto bufferSize = blockPixelSize * blockPixelSize;
+    Block masterBlock(posX, posY, size, 0, outputSizePixels);
+    auto blocks = masterBlock.divide(totalRanks);
 
-    {
-        //Allocate a block of memory to keep our local results until sending
-        auto myResultVals = vector<int>(bufferSize);
+    auto seed = static_cast<int>(time(nullptr));
+    MPI_Bcast(&seed, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        if (myRank == 1) {
-            auto blockCoordX = 0; //In full blocks
-            auto blockCoordY = 0;
+    // Since the seed was broadcast, this shuffle is deterministic across nodes
+    shuffle(blocks.begin(), blocks.end(), default_random_engine{seed});
 
-            auto x = posX + size / blocksPerDirection * blockCoordX; //upper left corner of the block we want to manage
-            auto y = posY + size / blocksPerDirection * blockCoordY;
-            auto blockSize = size / blocksPerDirection;
-
-            auto targetSize = blockPixelSize;  //in pixels
-            //Start of the first row in our target matrix.
-            //Second row will start with an offset of +outputSizePixels, etc.
-            auto targetPos = targetSize * (blockCoordX + blockCoordY * outputSizePixels);
-
-            Block block(x, y, blockSize, targetPos, targetSize);
-            HandleBlock(myRank, block, window, outputSizePixels, myResultVals, maxNumberIterations);
-        }
+    vector<Block> localBlocks(blocks.begin() + myRank * totalRanks, blocks.begin() + (myRank + 1) * totalRanks);
+    for (auto localBlock : localBlocks) {
+        auto localResults = vector<int>(localBlock.targetSize * localBlock.targetSize);
+        handleBlock(myRank, localBlock, window, localResults, maxNumberIterations);
     }
-
 
     //Before outputting the result we wait for all the values
     MPI_Barrier(MPI_COMM_WORLD);
@@ -260,7 +275,6 @@ int main(int argc, char *argv[]) {
 
         fclose(fp);
     }
-
 
     MPI_Win_free(&window);
     MPI_Finalize();

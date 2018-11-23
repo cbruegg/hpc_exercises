@@ -13,7 +13,7 @@ if hash srun 2>/dev/null; then
         1) RES="";;
         *) RES="--reservation=hpclco";;
     esac
-    srun -t1 -A hpclco $RES -N2 ./lab04
+    srun -t1 -A hpclco $RES -n4 ./lab04 # WARNING: -n4 allocates LOCAL cores only (exception for lab04)
 else
     mpirun -n 4 ./lab04
 fi
