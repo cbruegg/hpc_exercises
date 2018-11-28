@@ -19,7 +19,7 @@ rm -f measurements.txt
 MAX_I=$(($MAX_THREADS / $STEPSIZE))
 for I in `seq 1 ${MAX_I}`;
 do
-    THREADS=$(($I * $STEPSIZE))
+    THREADS=$((1 + $I * $STEPSIZE))
     echo "Running with $THREADS thread(s)"
     printf "$THREADS " | tee measurements.txt
     if hash srun 2>/dev/null; then
