@@ -1,0 +1,29 @@
+#!/bin/bash
+
+module load intel/18.0.3
+
+echo "Running make..."
+make -f ManualMakefile lab05 || { exit 1; }
+
+echo "Executing built binary..."
+tput setaf 2 2> /dev/null
+
+MAX_THREADS=`grep -c ^processor /proc/cpuinfo`
+TOSSES=100000000
+
+rm measurements.txt
+
+MAX_I=`echo "scale=2;sqrt($MAX_THREADS)" | bc`
+for I in `seq 1 ${MAX_I}`;
+do
+    THREADS=$(($I * $I))
+    echo "Running with $THREADS thread(s)"
+    printf "$THREADS " >> measurements.txt
+    if hash srun 2>/dev/null; then
+        srun -t1 -N1 -n1 ./lab05 ${TOSSES} ${THREADS} | tail -n 1 >> measurements.txt
+    else
+        ./lab05 ${TOSSES} ${THREADS} | tail -n 1 >> measurements.txt
+fi
+done
+
+tput sgr0 2> /dev/null

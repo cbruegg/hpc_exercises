@@ -5,6 +5,7 @@
 #include <iostream>
 #include <thread>
 #include <fstream>
+#include <chrono>
 #include <pthread.h>
 
 using namespace std;
@@ -21,8 +22,13 @@ public:
         const auto totalRanks = stoi(argv[2]);
         const auto tossesPerRank = tosses / totalRanks;
 
+        chrono::steady_clock::time_point threadLocalBegin = std::chrono::steady_clock::now();
         uint64_t globalTossesInCircleResultThreadLocal = threadLocalVersion(totalRanks, tossesPerRank);
+        chrono::steady_clock::time_point threadLocalEnd = std::chrono::steady_clock::now();
+
+        chrono::steady_clock::time_point sharedBegin = std::chrono::steady_clock::now();
         uint64_t globalTossesInCircleResultShared = sharedVersion(totalRanks, tossesPerRank);
+        chrono::steady_clock::time_point sharedEnd = std::chrono::steady_clock::now();
 
         const auto piEstimateThreadLocal = (4.0 * globalTossesInCircleResultThreadLocal) / tosses;
         cout << globalTossesInCircleResultThreadLocal
@@ -34,6 +40,12 @@ public:
         cout << globalTossesInCircleResultShared
              << " tosses landed inside the circle in shared version. π ≈ "
              << piEstimateShared
+             << endl;
+
+        cout << "Times: threadLocal shared" << endl;
+        cout << chrono::duration_cast<chrono::milliseconds>(threadLocalEnd - threadLocalBegin).count()
+             << " "
+             << chrono::duration_cast<chrono::milliseconds>(sharedEnd - sharedBegin).count()
              << endl;
 
         return 0;
