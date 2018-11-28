@@ -18,8 +18,8 @@ ifneq (, $(shell which clang))
 	export OMPI_CC=clang
 endif
 
-CC_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c11
-CXX_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c++17
+CC_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c11 -pthread
+CXX_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c++17 -pthread
 
 lab01: lab01.c
 	${CC} ${CC_FLAGS} -o lab01 lab01.c
@@ -36,5 +36,8 @@ lab03_2: lab03_2.cpp
 lab04: lab04.cpp
 	${CXX} ${CXX_FLAGS} -o lab04 lab04.cpp
 
+lab05: lab05.cpp
+	${CXX} ${CXX_FLAGS} -o lab05 lab05.cpp
+
 clean:
-	rm -f lab01 lab02 lab03_1 lab03_2 lab04
+	rm -f lab01 lab02 lab03_1 lab03_2 lab04 lab05

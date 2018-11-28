@@ -1,0 +1,22 @@
+#!/bin/bash
+
+module load intel/18.0.3
+
+echo "Running make..."
+make -f ManualMakefile lab05 || { exit 1; }
+
+echo "Executing built binary..."
+tput setaf 2 2> /dev/null
+
+if hash srun 2>/dev/null; then
+    case "$NORESERV" in
+        1) RES="";;
+        *) RES="--reservation=hpclco";;
+    esac
+    srun -t1 -A hpclco $RES -N1 -n1 ./lab05 # WARNING: allocates LOCAL cores only (exception for lab05)
+else
+    ./lab05 # WARNING: Only local!
+fi
+
+
+tput sgr0 2> /dev/null
