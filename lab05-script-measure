@@ -17,7 +17,7 @@ TOSSES=1000000000
 rm -f measurements.txt
 
 MAX_I=$(($MAX_THREADS / $STEPSIZE))
-for I in `seq 1 ${MAX_I}`;
+for I in `seq 0 ${MAX_I}`;
 do
     THREADS=$((1 + $I * $STEPSIZE))
     echo "Running with $THREADS thread(s)"
