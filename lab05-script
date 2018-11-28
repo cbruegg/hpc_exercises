@@ -8,14 +8,17 @@ make -f ManualMakefile lab05 || { exit 1; }
 echo "Executing built binary..."
 tput setaf 2 2> /dev/null
 
+TOSSES=100000
+THREADS=4
+
 if hash srun 2>/dev/null; then
     case "$NORESERV" in
         1) RES="";;
         *) RES="--reservation=hpclco";;
     esac
-    srun -t1 -A hpclco $RES -N1 -n1 ./lab05 # WARNING: allocates LOCAL cores only (exception for lab05)
+    srun -t1 $RES -N1 -n1 ./lab05 ${TOSSES} ${THREADS} # WARNING: allocates LOCAL cores only (exception for lab05)
 else
-    ./lab05 # WARNING: Only local!
+    ./lab05 ${TOSSES} ${THREADS} # WARNING: Only local!
 fi
 
 

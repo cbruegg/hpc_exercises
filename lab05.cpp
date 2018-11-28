@@ -12,8 +12,13 @@ using namespace std;
 class Main final {
 public:
     static int main(const int argc, char *const argv[]) {
-        const auto totalRanks = std::thread::hardware_concurrency();
-        const uint64_t tosses = 1000000;
+        if (argc < 2) {
+            cerr << "Arguments: tosses threads" << endl;
+            return EXIT_FAILURE;
+        }
+
+        const auto tosses = stou64(argv[1]);
+        const auto totalRanks = stoi(argv[2]);
         const auto tossesPerRank = tosses / totalRanks;
 
         uint64_t globalTossesInCircleResultThreadLocal = threadLocalVersion(totalRanks, tossesPerRank);
@@ -40,7 +45,7 @@ private:
     static uint64_t numberOfTossesSoFar;
     static uint64_t tossesWithinCircle;
 
-    static uint64_t sharedVersion(const unsigned int totalRanks, const uint64_t &tossesPerRank) {
+    static uint64_t sharedVersion(const int totalRanks, const uint64_t tossesPerRank) {
         pthread_mutex_init(&mutex, nullptr);
         const uint64_t totalTosses = tossesPerRank * totalRanks;
 
@@ -89,7 +94,7 @@ private:
         return nullptr;
     }
 
-    static uint64_t threadLocalVersion(const unsigned int totalRanks, const uint64_t &tossesPerRank) {
+    static uint64_t threadLocalVersion(const int totalRanks, const uint64_t tossesPerRank) {
         auto *const threads = (pthread_t *) malloc(totalRanks * sizeof(pthread_t));
         for (unsigned i = 0; i < totalRanks; i++) {
             pthread_create(&threads[i], nullptr, threadLocalThreadFuncVersion, (void *) &tossesPerRank);
