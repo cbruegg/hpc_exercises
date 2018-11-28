@@ -9,14 +9,15 @@ echo "Executing built binary..."
 tput setaf 2 2> /dev/null
 
 MAX_THREADS=$((`grep -c ^processor /proc/cpuinfo` * 2 ))
+STEPSIZE=4
 TOSSES=1000000000
 
-rm measurements.txt
+rm -f measurements.txt
 
-MAX_I=`echo "scale=2;sqrt($MAX_THREADS)" | bc`
+MAX_I=$(($MAX_THREADS / $STEPSIZE))
 for I in `seq 1 ${MAX_I}`;
 do
-    THREADS=$(($I * $I))
+    THREADS=$(($I * $STEPSIZE))
     echo "Running with $THREADS thread(s)"
     printf "$THREADS " >> measurements.txt
     if hash srun 2>/dev/null; then
