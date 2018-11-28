@@ -15,12 +15,12 @@ STEPSIZE=4
 TOSSES=1000000000
 
 rm -f measurements.txt
+echo "Thread(s) | local | shared"
 
 MAX_I=$(($MAX_THREADS / $STEPSIZE))
 for I in `seq 0 ${MAX_I}`;
 do
     THREADS=$((1 + $I * $STEPSIZE))
-    echo "Running with $THREADS thread(s)"
     printf "$THREADS " | tee measurements.txt
     if hash srun 2>/dev/null; then
         srun -t1 -N1 -n1 ./lab05 ${TOSSES} ${THREADS} | tail -n 1 | tee measurements.txt
