@@ -153,20 +153,6 @@ private:
         return result;
     }
 
-    static uint64_t readTossesFromCinOrExit() {
-        cout << "How often should I toss?" << endl;
-
-        string line;
-        getline(cin, line);
-
-        try {
-            return stou64(line);
-        }
-        catch (invalid_argument &e) {
-            cerr << "Invalid input!" << endl;
-            exit(EXIT_FAILURE);
-        };
-    }
 };
 
 pthread_mutex_t Main::mutex = {};
