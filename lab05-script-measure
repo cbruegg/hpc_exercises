@@ -12,7 +12,7 @@ tput setaf 2 2> /dev/null
 
 MAX_THREADS=$((`grep -c ^processor /proc/cpuinfo` * 2 ))
 STEPSIZE=4
-TOSSES=1000000000
+TOSSES=10000000
 
 rm -f measurements.txt
 echo "Thread(s) | local | shared"
