@@ -23,7 +23,7 @@ do
     THREADS=$((1 + $I * $STEPSIZE))
     printf "$THREADS " | tee measurements.txt
     if hash srun 2>/dev/null; then
-        srun -t1 -N1 -n1 ./lab05 ${TOSSES} ${THREADS} | tail -n 1 | tee measurements.txt
+        srun -t3 -N1 -n1 ./lab05 ${TOSSES} ${THREADS} | tail -n 1 | tee measurements.txt
     else
         ./lab05 ${TOSSES} ${THREADS} | tail -n 1 | tee measurements.txt
 fi
