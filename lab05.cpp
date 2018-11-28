@@ -22,13 +22,13 @@ public:
         const auto totalRanks = stoi(argv[2]);
         const auto tossesPerRank = tosses / totalRanks;
 
-        chrono::steady_clock::time_point threadLocalBegin = std::chrono::steady_clock::now();
-        uint64_t globalTossesInCircleResultThreadLocal = threadLocalVersion(totalRanks, tossesPerRank);
-        chrono::steady_clock::time_point threadLocalEnd = std::chrono::steady_clock::now();
+        const auto threadLocalBegin = chrono::steady_clock::now();
+        const auto globalTossesInCircleResultThreadLocal = threadLocalVersion(totalRanks, tossesPerRank);
+        const auto threadLocalEnd = chrono::steady_clock::now();
 
-        chrono::steady_clock::time_point sharedBegin = std::chrono::steady_clock::now();
-        uint64_t globalTossesInCircleResultShared = sharedVersion(totalRanks, tossesPerRank);
-        chrono::steady_clock::time_point sharedEnd = std::chrono::steady_clock::now();
+        const auto sharedBegin = chrono::steady_clock::now();
+        const auto globalTossesInCircleResultShared = sharedVersion(totalRanks, tossesPerRank);
+        const auto sharedEnd = chrono::steady_clock::now();
 
         const auto piEstimateThreadLocal = (4.0 * globalTossesInCircleResultThreadLocal) / tosses;
         cout << globalTossesInCircleResultThreadLocal
