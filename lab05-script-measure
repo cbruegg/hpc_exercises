@@ -10,9 +10,9 @@ make -f ManualMakefile lab05 || { exit 1; }
 echo "Executing built binary..."
 tput setaf 2 2> /dev/null
 
-MAX_THREADS=$((`grep -c ^processor /proc/cpuinfo` * 2 ))
-STEPSIZE=4
-TOSSES=50000000
+MAX_THREADS=`grep -c ^processor /proc/cpuinfo`
+STEPSIZE=2
+TOSSES=100000000
 
 rm -f measurements.txt
 echo "Thread(s) | local | shared"
