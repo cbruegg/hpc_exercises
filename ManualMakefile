@@ -1,13 +1,20 @@
+CC_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c11 -pthread
+CXX_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c++17 -pthread
+
 ifeq (, $(shell which mpiicpc))
 	CXX := mpicxx
+	CXX_FLAGS := ${CXX_FLAGS} -fopenmp
 else
 	CXX := mpiicpc
+	CXX_FLAGS := ${CXX_FLAGS} -qopenmp
 endif
 
 ifeq (, $(shell which mpiicc))
 	CC := mpicc
+	CC_FLAGS := ${CC_FLAGS} -fopenmp
 else
 	CC := mpiicc
+	CC_FLAGS := ${CC_FLAGS} -qopenmp
 endif
 
 ifneq (, $(shell which clang++))
@@ -18,8 +25,6 @@ ifneq (, $(shell which clang))
 	export OMPI_CC=clang
 endif
 
-CC_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c11 -pthread
-CXX_FLAGS := -O3 -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -std=c++17 -pthread
 
 lab01: lab01.c
 	${CC} ${CC_FLAGS} -o lab01 lab01.c

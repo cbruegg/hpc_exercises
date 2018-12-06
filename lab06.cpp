@@ -6,6 +6,12 @@
 #include <iomanip>
 #include <vector>
 
+#ifdef _OPENMP
+
+#include <omp.h>
+
+#endif
+
 using namespace std;
 
 const unsigned char LIVE = 1;
@@ -27,7 +33,6 @@ void writePpm(const vector<unsigned char> gen, const string &filename, const siz
 
 
 const vector<unsigned char> readPpm(const string &filename, size_t *const sideLength) {
-
     size_t h = 0;
     const auto fp = fopen(filename.c_str(), "rb");
     fscanf(fp, "P6\n%zu %zu\n255\n", sideLength, &h);
@@ -63,6 +68,7 @@ size_t countLiveNeighbors(const vector<unsigned char> data, size_t sideLength, s
 }
 
 void update(const vector<unsigned char> &prev, vector<unsigned char> &next, size_t sideLength) {
+#pragma omp parallel for
     for (auto x = 0ul; x < sideLength; x++) {
         for (auto y = 0ul; y < sideLength; y++) {
             const auto liveNeighbors = countLiveNeighbors(prev, sideLength, x, y);
