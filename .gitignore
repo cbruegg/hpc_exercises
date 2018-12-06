@@ -20,6 +20,6 @@ lab09
 
 submission.zip
 
-*.ppm
+Mandelbrot*.ppm
 
 measurements.txt

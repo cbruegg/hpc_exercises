@@ -1,0 +1,25 @@
+#!/bin/bash
+
+module load intel/18.0.3
+
+echo "Running make..."
+make -f ManualMakefile lab06 || { exit 1; }
+
+echo "Executing built binary..."
+tput setaf 2 2> /dev/null
+
+INITIAL=input64.ppm
+ITERATIONS=2
+
+if hash srun 2>/dev/null; then
+    case "$NORESERV" in
+        1) RES="";;
+        *) RES="--reservation=hpclco";;
+    esac
+    srun -t1 $RES -N1 -n1 ./lab06 ${INITIAL} ${ITERATIONS} # WARNING: allocates LOCAL cores only (exception for lab06)
+else
+    ./lab06 ${INITIAL} ${ITERATIONS} # WARNING: Only local!
+fi
+
+
+tput sgr0 2> /dev/null

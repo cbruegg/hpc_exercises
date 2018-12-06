@@ -39,5 +39,8 @@ lab04: lab04.cpp
 lab05: lab05.cpp
 	${CXX} ${CXX_FLAGS} -o lab05 lab05.cpp
 
+lab06: lab06.cpp
+	${CXX} ${CXX_FLAGS} -o lab06 lab06.cpp
+
 clean:
-	rm -f lab01 lab02 lab03_1 lab03_2 lab04 lab05
+	rm -f lab01 lab02 lab03_1 lab03_2 lab04 lab05 lab06
