@@ -5,6 +5,7 @@
 #include <memory>
 #include <iomanip>
 #include <vector>
+#include <sstream>
 
 #ifdef _OPENMP
 
