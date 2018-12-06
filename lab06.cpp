@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
     for (auto i = 0; i < iterations; i++) {
         update(prev, next, sideLength);
 
-        stringstream outFile;
+        std::stringstream outFile;
         outFile << "output-" << setfill('0') << setw(2) << i << ".ppm";
         writePpm(next, outFile.str(), sideLength);
 
