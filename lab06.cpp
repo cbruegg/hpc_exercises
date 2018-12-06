@@ -10,7 +10,6 @@ using namespace std;
 const unsigned char LIVE = 1;
 const unsigned char DEAD = 0;
 
-
 void writePpm(const shared_ptr<unsigned char[]> gen, const string &filename, const size_t sideLength) {
     FILE *fp = fopen(filename.c_str(), "wb");
     fprintf(fp, "P6\n%zd %zd\n255\n", sideLength, sideLength);
@@ -30,19 +29,17 @@ const shared_ptr<unsigned char[]> readPpm(const string &filename, size_t *const 
 
     size_t h = 0;
     const auto fp = fopen(filename.c_str(), "rb");
-    fscanf(fp, "P6\n%zd %zd\n255\n", sideLength, &h);
+    fscanf(fp, "P6\n%zu %zu\n255\n", sideLength, &h);
 
     if (*sideLength != h) exit(1);
 
     const shared_ptr<unsigned char[]> gen(new unsigned char[(*sideLength) * (*sideLength)]);
 
-    for (int i = 0; i < (*sideLength) * (*sideLength); i++) {
+    for (auto i = 0ul; i < (*sideLength) * (*sideLength); i++) {
         unsigned char buf[3];
         fread(buf, 1, 3, fp);
 
-        if (buf[0] == 0 && buf[1] == 0 && buf[2] == 0) gen[i] = LIVE; // black pixel
-        else gen[i] = DEAD;
-
+        gen[i] = buf[0] == 0 && buf[1] == 0 && buf[2] == 0 ? LIVE : DEAD;
     }
 
     fclose(fp);
