@@ -8,8 +8,8 @@ make -f ManualMakefile lab06 || { exit 1; }
 echo "Executing built binary..."
 tput setaf 2 2> /dev/null
 
-INITIAL=input64.ppm
-ITERATIONS=2
+INITIAL=input1024.ppm
+ITERATIONS=4
 
 if hash srun 2>/dev/null; then
     case "$NORESERV" in
