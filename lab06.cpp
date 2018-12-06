@@ -4,13 +4,14 @@
 #include <iostream>
 #include <memory>
 #include <iomanip>
+#include <vector>
 
 using namespace std;
 
 const unsigned char LIVE = 1;
 const unsigned char DEAD = 0;
 
-void writePpm(const shared_ptr<unsigned char[]> gen, const string &filename, const size_t sideLength) {
+void writePpm(const vector<unsigned char> gen, const string &filename, const size_t sideLength) {
     FILE *fp = fopen(filename.c_str(), "wb");
     fprintf(fp, "P6\n%zd %zd\n255\n", sideLength, sideLength);
 
@@ -25,7 +26,7 @@ void writePpm(const shared_ptr<unsigned char[]> gen, const string &filename, con
 }
 
 
-const shared_ptr<unsigned char[]> readPpm(const string &filename, size_t *const sideLength) {
+const vector<unsigned char> readPpm(const string &filename, size_t *const sideLength) {
 
     size_t h = 0;
     const auto fp = fopen(filename.c_str(), "rb");
@@ -33,7 +34,7 @@ const shared_ptr<unsigned char[]> readPpm(const string &filename, size_t *const 
 
     if (*sideLength != h) exit(1);
 
-    const shared_ptr<unsigned char[]> gen(new unsigned char[(*sideLength) * (*sideLength)]);
+    vector<unsigned char> gen((*sideLength) * (*sideLength));
 
     for (auto i = 0ul; i < (*sideLength) * (*sideLength); i++) {
         unsigned char buf[3];
@@ -47,8 +48,37 @@ const shared_ptr<unsigned char[]> readPpm(const string &filename, size_t *const 
     return gen;
 }
 
-void update(const shared_ptr<unsigned char[]> data, size_t sideLength) {
+size_t countLiveNeighbors(const vector<unsigned char> data, size_t sideLength, size_t x, size_t y) {
+    auto count = 0ul;
+    for (auto neighborX = max(0ul, x - 1); neighborX <= min(sideLength - 1, x + 1); neighborX++) {
+        for (auto neighborY = max(0ul, y - 1); neighborY <= min(sideLength - 1, y + 1); neighborY++) {
+            if (neighborX == x && neighborY == y) continue;
 
+            if (data[neighborY * sideLength + neighborX] == LIVE) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+void update(const vector<unsigned char> &prev, vector<unsigned char> &next, size_t sideLength) {
+    for (auto x = 0ul; x < sideLength; x++) {
+        for (auto y = 0ul; y < sideLength; y++) {
+            const auto liveNeighbors = countLiveNeighbors(prev, sideLength, x, y);
+
+            const auto idx = y * sideLength + x;
+            if (prev[idx] == LIVE) {
+                if (liveNeighbors < 2 || liveNeighbors > 3) {
+                    next[idx] = DEAD;
+                }
+            } else {
+                if (liveNeighbors == 3) {
+                    next[idx] = LIVE;
+                }
+            }
+        }
+    }
 }
 
 int main(int argc, char **argv) {
@@ -64,13 +94,17 @@ int main(int argc, char **argv) {
     const auto iterations = stoi(argv[2]);
 
     size_t sideLength;
-    const auto prev = readPpm(fileName, &sideLength);
+    auto prev = readPpm(fileName, &sideLength);
+    auto next = prev;
+
     for (auto i = 0; i < iterations; i++) {
-        update(prev, sideLength);
+        update(prev, next, sideLength);
 
         stringstream outFile;
         outFile << "output-" << setfill('0') << setw(2) << i << ".ppm";
-        writePpm(prev, outFile.str(), sideLength);
+        writePpm(next, outFile.str(), sideLength);
+
+        prev = next;
     }
     return 0;
 }
