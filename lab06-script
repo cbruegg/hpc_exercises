@@ -16,7 +16,7 @@ if hash srun 2>/dev/null; then
         1) RES="";;
         *) RES="--reservation=hpclco";;
     esac
-    srun -t1 $RES -N1 -n1 ./lab06 ${INITIAL} ${ITERATIONS} # WARNING: allocates LOCAL cores only (exception for lab06)
+    srun -t1 $RES -N1 ./lab06 ${INITIAL} ${ITERATIONS} # WARNING: allocates LOCAL cores only (exception for lab06)
 else
     ./lab06 ${INITIAL} ${ITERATIONS} # WARNING: Only local!
 fi
