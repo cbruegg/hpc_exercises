@@ -12,6 +12,7 @@
 #ifdef _OPENMP
 
 #include <omp.h>
+#include <chrono>
 
 #endif
 
@@ -31,17 +32,32 @@ public:
         auto matrix = generateMatrix(systemSize);
         auto rhs = generateRhsVector(matrix);
 
-        printSystem(matrix, rhs);
-        cout << endl;
+        const auto elimBegin = chrono::steady_clock::now();
         gaussianElimination(matrix, rhs);
-        printSystem(matrix, rhs);
-        cout << endl;
+        const auto elimEnd = chrono::steady_clock::now();
 
+        const auto solveBegin = chrono::steady_clock::now();
         const auto solution = solveWithBackSubstitution(matrix, rhs);
+        const auto solveEnd = chrono::steady_clock::now();
+
+        auto maxErr = 0.0;
         for (auto value : solution) {
-            cout << setw(15) << value << " ";
+            maxErr = max(maxErr, abs(1.0 - value));
         }
-        cout << endl;
+        cout << "Max error in solution = " << maxErr << endl;
+        cout << "Time for Gaussian elim = "
+             << chrono::duration_cast<chrono::seconds>(elimEnd - elimBegin).count()
+             << " seconds"
+             << endl;
+        cout << "Time for back sub = "
+             << chrono::duration_cast<chrono::seconds>(solveEnd - solveBegin).count()
+             << " seconds"
+             << endl;
+        cout << "Total time for solve = "
+             << chrono::duration_cast<chrono::seconds>(elimEnd - elimBegin + solveEnd - solveBegin).count()
+             << " seconds"
+             << endl;
+
 
         return 0;
     }
@@ -50,7 +66,9 @@ private:
 
     Matrix generateMatrix(const size_t systemSize) {
         uniform_real_distribution<double> uniform(0, 1);
-        default_random_engine engine;
+        default_random_engine engine(
+                static_cast<unsigned long>(chrono::system_clock::now().time_since_epoch().count())
+        );
 
         auto matrix = vector<vector<double>>(systemSize);
         for (size_t row = 0; row < systemSize; row++) {
@@ -95,6 +113,8 @@ private:
 
         for (auto col = systemSize - 1;;) {
             sol[col] /= matrix[col][col];
+
+#pragma omp parallel for
             for (size_t row = 0; row < col; row++) {
                 sol[row] -= matrix[row][col] * sol[col];
             }
@@ -103,17 +123,6 @@ private:
         }
 
         return sol;
-    }
-
-    void printSystem(Matrix matrix, vector<double> rhs) {
-        for (size_t rowIdx = 0; rowIdx < matrix.size(); rowIdx++) {
-            const auto row = matrix[rowIdx];
-            for (const auto cell : row) {
-                cout << setw(15) << cell << " ";
-            }
-            cout << setw(15) << rhs[rowIdx] << " ";
-            cout << endl;
-        }
     }
 
 };
