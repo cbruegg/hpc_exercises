@@ -8,6 +8,9 @@ make -f ManualMakefile lab07 || { exit 1; }
 echo "Executing built binary..."
 tput setaf 2 2> /dev/null
 
+export OMP_SCHEDULE="static"
+export OMP_NUM_THREADS=40
+
 N=3000
 
 if hash srun 2>/dev/null; then

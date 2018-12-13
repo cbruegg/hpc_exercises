@@ -1,16 +1,65 @@
-// TODO Calculate speedup
-
-// Scheduler: Default. Chunk size: Default. Threads: 1.
+// Scheduler: static. Chunk size: 3000. Threads: 1.
 //   Max error in solution = 2.40918e-14
 //   Time for Gaussian elim = 12 seconds
 //   Time for back sub = 0 seconds
 //   Total time for solve = 12 seconds
+// BASELINE
 
-// Scheduler: Default. Chunk size: Default. Threads: 40.
+// Scheduler: static. Chunk size: 75. Threads: 40.
 //   Max error in solution = 2.95319e-14
 //   Time for Gaussian elim = 0 seconds
 //   Time for back sub = 0 seconds
 //   Total time for solve = 0 seconds
+// SPEEDUP > 12
+
+// Scheduler: static. Chunk size: 25. Threads: 40.
+//   Max error in solution = 2.39808e-14
+//   Time for Gaussian elim = 0 seconds
+//   Time for back sub = 0 seconds
+//   Total time for solve = 0 seconds
+// SPEEDUP > 12
+
+// Scheduler: static. Chunk size: 1. Threads: 40.
+//   Max error in solution = 2.81997e-14
+//   Time for Gaussian elim = 1 seconds
+//   Time for back sub = 0 seconds
+//   Total time for solve = 1 seconds
+// SPEEDUP ≈ 12
+
+// Scheduler: dynamic. Chunk size: 1. Threads: 40.
+//   Max error in solution = 2.90878e-14
+//   Time for Gaussian elim = 1 seconds
+//   Time for back sub = 0 seconds
+//   Total time for solve = 1 seconds
+// SPEEDUP ≈ 12
+
+// Scheduler: dynamic. Chunk size: 25. Threads: 40.
+//   Max error in solution = 2.94209e-14
+//   Time for Gaussian elim = 1 seconds
+//   Time for back sub = 0 seconds
+//   Total time for solve = 1 seconds
+// SPEEDUP ≈ 12
+
+// Scheduler: guided. Chunk size: 1. Threads: 40.
+//   Max error in solution = 2.93099e-14
+//   Time for Gaussian elim = 1 seconds
+//   Time for back sub = 0 seconds
+//   Total time for solve = 1 seconds
+// SPEEDUP ≈ 12
+
+// Scheduler: guided. Chunk size: 25. Threads: 40.
+//   Max error in solution = 3.24185e-14
+//   Time for Gaussian elim = 1 seconds
+//   Time for back sub = 0 seconds
+//   Total time for solve = 1 seconds
+// SPEEDUP ≈ 12
+
+// Result: Static scheduling with equally-sized blocks seems to be the most
+//         efficient method in this case. This suggests that the workload
+//         per block is balanced well. Taking a look at the bodies of the
+//         parallelized for-loops confirms this: the amount of work
+//         per iteration is mostly dependent on the system size for the
+//         gaussian elimination and even constant for the back substitution.
 
 #include<stdio.h>
 #include<stdlib.h>
@@ -21,11 +70,11 @@
 #include <iomanip>
 #include <vector>
 #include <sstream>
+#include <chrono>
 
 #ifdef _OPENMP
 
 #include <omp.h>
-#include <chrono>
 
 #endif
 
