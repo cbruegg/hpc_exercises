@@ -7,7 +7,6 @@
 #include <iomanip>
 #include <vector>
 #include <sstream>
-#include <optional>
 
 #ifdef _OPENMP
 
