@@ -43,7 +43,7 @@ private:
         for (size_t row = 0; row < systemSize; row++) {
             matrix[row] = vector<double>(systemSize);
             for (size_t col = 0; col < systemSize; col++) {
-                matrix[row][col] = row == col ? 0 : engine();
+                matrix[row][col] = row == col ? systemSize / 10 : engine();
             }
         }
         return matrix;
