@@ -1,3 +1,17 @@
+// TODO Calculate speedup
+
+// Scheduler: Default. Chunk size: Default. Threads: 1.
+//   Max error in solution = 2.40918e-14
+//   Time for Gaussian elim = 12 seconds
+//   Time for back sub = 0 seconds
+//   Total time for solve = 12 seconds
+
+// Scheduler: Default. Chunk size: Default. Threads: 40.
+//   Max error in solution = 2.95319e-14
+//   Time for Gaussian elim = 0 seconds
+//   Time for back sub = 0 seconds
+//   Total time for solve = 0 seconds
+
 #include<stdio.h>
 #include<stdlib.h>
 #include <random>
@@ -96,7 +110,7 @@ private:
         const auto systemSize = matrix.size();
 
         for (size_t col = 0; col < systemSize; col++) {
-#pragma omp parallel for
+#pragma omp parallel for schedule(runtime)
             for (auto row = col + 1; row < systemSize; row++) {
                 const auto eliminationFactor = matrix[row][col] / matrix[col][col];
                 for (size_t i = 0; i < systemSize; i++) {
@@ -114,7 +128,7 @@ private:
         for (auto col = systemSize - 1;;) {
             sol[col] /= matrix[col][col];
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(runtime)
             for (size_t row = 0; row < col; row++) {
                 sol[row] -= matrix[row][col] * sol[col];
             }
