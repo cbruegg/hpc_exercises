@@ -1,0 +1,20 @@
+#!/bin/bash
+
+module load intel/18.0.3
+
+echo "Running make..."
+make -f ManualMakefile lab07 || { exit 1; }
+
+echo "Executing built binary..."
+tput setaf 2 2> /dev/null
+
+N=4
+
+if hash srun 2>/dev/null; then
+    srun -t1 -N1 ./lab07 ${N}
+else
+    ./lab07 ${N}
+fi
+
+
+tput sgr0 2> /dev/null
