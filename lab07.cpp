@@ -97,6 +97,7 @@ private:
         const auto systemSize = matrix.size();
 
         for (size_t col = 0; col < systemSize; col++) {
+#pragma omp parallel for
             for (auto row = col + 1; row < systemSize; row++) {
                 const auto eliminationFactor = matrix[row][col] / matrix[col][col];
                 for (size_t i = 0; i < systemSize; i++) {
