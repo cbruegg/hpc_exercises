@@ -8,7 +8,7 @@ make -f ManualMakefile lab07 || { exit 1; }
 echo "Executing built binary..."
 tput setaf 2 2> /dev/null
 
-N=4
+N=3000
 
 if hash srun 2>/dev/null; then
     srun -t1 -N1 ./lab07 ${N}
