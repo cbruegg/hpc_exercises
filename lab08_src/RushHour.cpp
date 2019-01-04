@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <omp.h>
 #include <unordered_set>
-#include <shared_mutex>
 
 #include <vector>
 
@@ -17,7 +16,7 @@ using namespace std;
 	state is the arrangement we want to check,
 	manager is a pointer to the StateManager that coordinates the global state by keeping track of results and already checked states.
 */
-void Check(State state, StateManager *manager, shared_mutex &mutex) {
+void Check(State state, StateManager *manager) {
 /*
 	Task 1
 	------
@@ -30,39 +29,30 @@ void Check(State state, StateManager *manager, shared_mutex &mutex) {
 		 (state.move_car(...) returns such a followup state from a given car number and direction)
 		-Check whether the followup states created are legal states. If so recursively call Check(...) on them.
 */
-    // TODO Move mutex inside StateManager
 
-    mutex.lock_shared();
     if (state.solutionSize() > manager->bestSolutionSize()) {
-        mutex.unlock_shared();
         return;
     }
-    mutex.unlock_shared();
 
-    mutex.lock();
     if (!manager->claim(state)) {
-        mutex.unlock();
         return;
     }
-    mutex.unlock();
 
-    // No lock needed for this check (accesses only constant values)
+    // No lock needed for this check (accesses only non-shared and constant values)
     if (state.won(manager)) {
-        mutex.lock();
         manager->enterSolution(state);
-        mutex.unlock();
         return;
     }
 
-#pragma omp taskloop default(none) firstprivate(state) shared(manager, mutex) mergeable
+#pragma omp taskloop default(none) firstprivate(state) shared(manager) mergeable
     for (auto car = 0; car < state.carCount(); car++) {
         auto bwdState = state.move_car(car, false);
         auto fwdState = state.move_car(car, true);
         if (bwdState.legal(manager)) {
-            Check(bwdState, manager, mutex);
+            Check(bwdState, manager);
         }
         if (fwdState.legal(manager)) {
-            Check(fwdState, manager, mutex);
+            Check(fwdState, manager);
         }
     }
     // No taskwait necessary as main creates a taskgroup
@@ -102,12 +92,10 @@ int main(int argc, char *argv[]) {
 	 Use the "default(none)" tag and explicitly state what a task can access and how it is accessed
 */
 
-    shared_mutex mutex;
-
 #pragma omp parallel
 #pragma omp taskgroup
 #pragma omp task
-    Check(State(cars_), state_manager, mutex);
+    Check(State(cars_), state_manager);
 
     state_manager->printBestSolution();
 

@@ -2,7 +2,9 @@
 
 #include "State.h"
 #include <unordered_set>
+#include <shared_mutex>
 
+using namespace std;
 
 class Playfield {
 public:
@@ -45,7 +47,7 @@ public:
     }
 
     //Size of the best solution found so far
-    int bestSolutionSize() const { return best_solution_size; };
+    int bestSolutionSize();
 
     //Enter a new solution. It replaces the previous one if its faster to reach.
     void enterSolution(const State &res);
@@ -65,6 +67,8 @@ private:
     State best_solution;
 
 
-    std::unordered_set <State, StateHash, StateEqual> state_set;
+    std::unordered_set<State, StateHash, StateEqual> state_set;
+
+    shared_mutex mutex;
 
 };

@@ -6,15 +6,17 @@
 using namespace std;
 
 void StateManager::enterSolution(const State &res) {
+    mutex.lock();
     if (res.solutionSize() < best_solution_size) {
         printf("Solution updated, size %d \n", res.solutionSize());
         best_solution = res;
         best_solution_size = res.solutionSize();
     }
+    mutex.unlock();
 }
 
 bool StateManager::claim(const State &val) {
-
+    mutex.lock();
 
     /*
         If we find that some other task has already claimed the exact configuration and reached it in as many or less steps,
@@ -22,6 +24,7 @@ bool StateManager::claim(const State &val) {
     */
     auto val_it = state_set.find(val);
     if (val_it != state_set.cend() && val.solutionSize() >= val_it->solutionSize()) {
+        mutex.unlock();
         return false; //Someone else is already doing that / has already done that
     }
 
@@ -30,12 +33,22 @@ bool StateManager::claim(const State &val) {
     state_set.erase(val);
     state_set.insert(val);
 
+    mutex.unlock();
 
     return true;
 }
 
 
 void StateManager::printBestSolution() {
+    mutex.lock_shared();
     best_solution.printSolution();
+    mutex.unlock_shared();
+}
+
+int StateManager::bestSolutionSize() {
+    mutex.lock_shared();
+    auto cur_best = best_solution_size;
+    mutex.unlock_shared();
+    return cur_best;
 }
 
