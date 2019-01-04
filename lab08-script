@@ -3,7 +3,7 @@
 module load intel/18.0.3
 
 echo "Running make..."
-make -f ManualMakefile lab08 || { exit 1; }
+make -j8 -f ManualMakefile lab08 || { exit 1; }
 
 echo "Executing built binary..."
 tput setaf 2 2> /dev/null
