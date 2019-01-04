@@ -30,7 +30,30 @@ void Check(State state, StateManager *manager) {
 		-Check whether the followup states created are legal states. If so recursively call Check(...) on them.
 */
 
-    return;
+    if (state.solutionSize() > manager->bestSolutionSize()) {
+        return;
+    }
+
+    // TODO Thread-safety
+    if (!manager->claim(state)) {
+        return;
+    }
+
+    if (state.won(manager)) {
+        manager->enterSolution(state);
+        return;
+    }
+
+    for (auto car = 0; car < state.carCount(); car++) {
+        auto bwdState = state.move_car(car, false);
+        auto fwdState = state.move_car(car, true);
+        if (bwdState.legal(manager)) {
+            Check(bwdState, manager);
+        }
+        if (fwdState.legal(manager)) {
+            Check(fwdState, manager);
+        }
+    }
 }
 
 
@@ -55,7 +78,7 @@ int main(int argc, char *argv[]) {
         The first car is the one that needs to reach the side of the playing field stated above, which is only possible if it has the proper orientation!
         The origin x=0, y=0 is the position in the lower left corner of the playing field.
     */
-    vector <Car> cars_ = {Car(0, 4, 0, 2), Car(2, 4, 1, 3), Car(3, 2, 1, 3), Car(0, 2, 0, 2), Car(2, 1, 0, 2)};
+    vector<Car> cars_ = {Car(0, 4, 0, 2), Car(2, 4, 1, 3), Car(3, 2, 1, 3), Car(0, 2, 0, 2), Car(2, 1, 0, 2)};
 
 /*
 	Task 2
