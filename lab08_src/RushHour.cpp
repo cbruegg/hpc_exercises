@@ -94,8 +94,11 @@ int main(int argc, char *argv[]) {
 
 #pragma omp parallel
 #pragma omp taskgroup
+#pragma omp single
 #pragma omp task
-    Check(State(cars_), state_manager);
+    {
+        Check(State(cars_), state_manager);
+    };
 
     state_manager->printBestSolution();
 
