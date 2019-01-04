@@ -9,9 +9,6 @@ make -j8 -f ManualMakefile lab08 || { exit 1; }
 echo "Executing built binary..."
 tput setaf 2 2> /dev/null
 
-export OMP_SCHEDULE="static"
-export OMP_NUM_THREADS=40
-
 if hash srun 2>/dev/null; then
     srun -t1 -N1 ./lab08
 else
