@@ -17,7 +17,7 @@ using namespace std;
 	state is the arrangement we want to check,
 	manager is a pointer to the StateManager that coordinates the global state by keeping track of results and already checked states.
 */
-void Check(State state, StateManager *manager, shared_mutex& mutex) {
+void Check(State state, StateManager *manager, shared_mutex &mutex) {
 /*
 	Task 1
 	------
@@ -30,6 +30,7 @@ void Check(State state, StateManager *manager, shared_mutex& mutex) {
 		 (state.move_car(...) returns such a followup state from a given car number and direction)
 		-Check whether the followup states created are legal states. If so recursively call Check(...) on them.
 */
+    // TODO Move mutex inside StateManager
 
     mutex.lock_shared();
     if (state.solutionSize() > manager->bestSolutionSize()) {
@@ -53,6 +54,7 @@ void Check(State state, StateManager *manager, shared_mutex& mutex) {
         return;
     }
 
+#pragma omp taskloop default(none) firstprivate(state) shared(manager, mutex) mergeable
     for (auto car = 0; car < state.carCount(); car++) {
         auto bwdState = state.move_car(car, false);
         auto fwdState = state.move_car(car, true);
@@ -63,6 +65,7 @@ void Check(State state, StateManager *manager, shared_mutex& mutex) {
             Check(fwdState, manager, mutex);
         }
     }
+    // No taskwait necessary as main creates a taskgroup
 }
 
 
@@ -100,6 +103,10 @@ int main(int argc, char *argv[]) {
 */
 
     shared_mutex mutex;
+
+#pragma omp parallel
+#pragma omp taskgroup
+#pragma omp task
     Check(State(cars_), state_manager, mutex);
 
     state_manager->printBestSolution();
