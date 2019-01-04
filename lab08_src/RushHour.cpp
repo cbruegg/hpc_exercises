@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <omp.h>
 #include <unordered_set>
+#include <shared_mutex>
 
 #include <vector>
 
@@ -16,7 +17,7 @@ using namespace std;
 	state is the arrangement we want to check,
 	manager is a pointer to the StateManager that coordinates the global state by keeping track of results and already checked states.
 */
-void Check(State state, StateManager *manager) {
+void Check(State state, StateManager *manager, shared_mutex& mutex) {
 /*
 	Task 1
 	------
@@ -30,17 +31,25 @@ void Check(State state, StateManager *manager) {
 		-Check whether the followup states created are legal states. If so recursively call Check(...) on them.
 */
 
+    mutex.lock_shared();
     if (state.solutionSize() > manager->bestSolutionSize()) {
+        mutex.unlock_shared();
         return;
     }
+    mutex.unlock_shared();
 
-    // TODO Thread-safety
+    mutex.lock();
     if (!manager->claim(state)) {
+        mutex.unlock();
         return;
     }
+    mutex.unlock();
 
+    // No lock needed for this check (accesses only constant values)
     if (state.won(manager)) {
+        mutex.lock();
         manager->enterSolution(state);
+        mutex.unlock();
         return;
     }
 
@@ -48,10 +57,10 @@ void Check(State state, StateManager *manager) {
         auto bwdState = state.move_car(car, false);
         auto fwdState = state.move_car(car, true);
         if (bwdState.legal(manager)) {
-            Check(bwdState, manager);
+            Check(bwdState, manager, mutex);
         }
         if (fwdState.legal(manager)) {
-            Check(fwdState, manager);
+            Check(fwdState, manager, mutex);
         }
     }
 }
@@ -90,7 +99,8 @@ int main(int argc, char *argv[]) {
 	 Use the "default(none)" tag and explicitly state what a task can access and how it is accessed
 */
 
-    Check(State(cars_), state_manager);
+    shared_mutex mutex;
+    Check(State(cars_), state_manager, mutex);
 
     state_manager->printBestSolution();
 
