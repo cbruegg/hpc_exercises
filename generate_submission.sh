@@ -14,7 +14,7 @@ if (($NUM == 6)); then
 fi
 
 TRACKED=`git ls-tree -r HEAD --name-only | awk 1 ORS=' ' | tr " " "\n" | sort -g`
-LAB_FILES=`echo "ManualMakefile lab${PAD_NUM}* lab${PAD_NUM}*/* ${ADDITIONAL_FILES}" | tr " " "\n" | sort -g`
+LAB_FILES=`echo ManualMakefile lab${PAD_NUM}* lab${PAD_NUM}*/* ${ADDITIONAL_FILES} | tr " " "\n" | sort -g`
 INTERSECTION_FILES=`comm -12 <(echo ${TRACKED} | tr " " "\n") <(echo ${LAB_FILES} | tr " " "\n")`
 
 zip submission_${PAD_NUM}.zip ${INTERSECTION_FILES}
