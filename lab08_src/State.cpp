@@ -60,7 +60,7 @@ size_t State::hash() const {
     //return std::hash<int>(playerX) ^ (std::hash<int>(playerY)<<1); // ^ std::hash<std::vector<int>>(boxes);
     return vec_h;
 
-};
+}
 
 
 void State::printSolution() const {

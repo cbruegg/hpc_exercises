@@ -32,7 +32,7 @@ bool StateManager::claim(const State &val) {
 
 
     return true;
-};
+}
 
 
 void StateManager::printBestSolution() {

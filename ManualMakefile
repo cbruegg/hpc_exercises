@@ -50,8 +50,25 @@ lab06: lab06.cpp
 lab07: lab07.cpp
 	${CXX} ${CXX_FLAGS} -o lab07 lab07.cpp
 
-lab08: lab08_src/RushHour.cpp
-	${CXX} ${CXX_FLAGS} -o lab08 lab08_src/RushHour.cpp
+lab08_build:
+	mkdir -p lab08_build
+
+lab08_build/Car.o: lab08_build
+	${CXX} ${CXX_FLAGS} -o lab08_build/Car.o -c lab08_src/Car.cpp
+
+lab08_build/State.o: lab08_build
+	${CXX} ${CXX_FLAGS} -o lab08_build/State.o -c lab08_src/State.cpp
+
+lab08_build/StateManager.o: lab08_build
+	${CXX} ${CXX_FLAGS} -o lab08_build/StateManager.o -c lab08_src/StateManager.cpp
+
+lab08_build/RushHour.o: lab08_build
+	${CXX} ${CXX_FLAGS} -o lab08_build/RushHour.o -c lab08_src/RushHour.cpp
+
+lab08: lab08_build/RushHour.o lab08_build/Car.o lab08_build/State.o lab08_build/StateManager.o
+	${CXX} ${CXX_FLAGS} -o lab08 lab08_build/RushHour.o lab08_build/Car.o lab08_build/State.o lab08_build/StateManager.o
 
 clean:
 	rm -f lab01 lab02 lab03_1 lab03_2 lab04 lab05 lab06 lab07 lab08
+
+.PHONY: clean
