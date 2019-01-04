@@ -25,6 +25,11 @@ ifneq (, $(shell which clang))
 	export OMPI_CC=clang
 endif
 
+ifneq (, $(shell which g++-8))
+	GXX := g++-8
+else
+    GXX := g++
+endif
 
 lab01: lab01.c
 	${CC} ${CC_FLAGS} -o lab01 lab01.c
@@ -54,19 +59,19 @@ lab08_build:
 	mkdir -p lab08_build
 
 lab08_build/Car.o: lab08_build
-	${CXX} ${CXX_FLAGS} -o lab08_build/Car.o -c lab08_src/Car.cpp
+	${GXX} ${CXX_FLAGS} -o lab08_build/Car.o -c lab08_src/Car.cpp
 
 lab08_build/State.o: lab08_build
-	${CXX} ${CXX_FLAGS} -o lab08_build/State.o -c lab08_src/State.cpp
+	${GXX} ${CXX_FLAGS} -o lab08_build/State.o -c lab08_src/State.cpp
 
 lab08_build/StateManager.o: lab08_build
-	${CXX} ${CXX_FLAGS} -o lab08_build/StateManager.o -c lab08_src/StateManager.cpp
+	${GXX} ${CXX_FLAGS} -o lab08_build/StateManager.o -c lab08_src/StateManager.cpp
 
 lab08_build/RushHour.o: lab08_build
-	${CXX} ${CXX_FLAGS} -o lab08_build/RushHour.o -c lab08_src/RushHour.cpp
+	${GXX} ${CXX_FLAGS} -o lab08_build/RushHour.o -c lab08_src/RushHour.cpp
 
 lab08: lab08_build/RushHour.o lab08_build/Car.o lab08_build/State.o lab08_build/StateManager.o
-	${CXX} ${CXX_FLAGS} -o lab08 lab08_build/RushHour.o lab08_build/Car.o lab08_build/State.o lab08_build/StateManager.o
+	${GXX} ${CXX_FLAGS} -o lab08 lab08_build/RushHour.o lab08_build/Car.o lab08_build/State.o lab08_build/StateManager.o
 
 clean:
 	rm -rf lab01 lab02 lab03_1 lab03_2 lab04 lab05 lab06 lab07 lab08 lab08_build
