@@ -78,7 +78,7 @@ public:
 
     static vector<double> times(const Matrix &m, const vector<double> &a, unsigned int rowStart, unsigned int rowEnd) {
 #ifdef DEBUG
-        if (m.size() != a.size() || m[0].size() != a.size()) {
+        if (m.size() != a.size() || m[rowStart].size() != a.size()) {
             throw invalid_argument("Sizes are not equal");
         }
 #endif
@@ -208,6 +208,7 @@ public:
             cout << "Max error: " << maxErr << endl;
         }
 
+        MPI_Finalize();
         return 0;
     }
 
@@ -240,11 +241,9 @@ private:
                          MPI_DOUBLE, targetRank, 0, MPI_COMM_WORLD);
             }
         } else {
-            contigPart = vector<double>(perRank);
+            contigPart = vector<double>(perRank * systemSize);
             MPI_Recv(contigPart.data(), perRank * systemSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, nullptr);
         }
-
-        MPI_Barrier(MPI_COMM_WORLD);
 
         unsigned int rowStart;
         unsigned int rowEnd;
@@ -252,7 +251,7 @@ private:
             rowStart = 0;
             rowEnd = rank0Rows;
         } else {
-            rowStart = remainder + rank * perRank * systemSize;
+            rowStart = remainder + rank * perRank;
             rowEnd = rowStart + perRank;
         }
 
