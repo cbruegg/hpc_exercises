@@ -24,13 +24,13 @@ using namespace std;
 
 using Matrix = vector<vector<double>>;
 
-int myRank() {
+unsigned int myRank() {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     return rank;
 }
 
-int ranks() {
+unsigned int ranks() {
     int totalRanks;
     MPI_Comm_size(MPI_COMM_WORLD, &totalRanks);
     return totalRanks;
@@ -44,9 +44,7 @@ unsigned int rowsPerRank(unsigned int systemSize) {
     return systemSize / ranks();
 }
 
-unsigned int rowStart(unsigned int systemSize) {
-    const auto rank = myRank();
-
+unsigned int rowStart(unsigned int systemSize, int rank = myRank()) {
     if (rank == 0) {
         return 0;
     } else {
@@ -56,8 +54,7 @@ unsigned int rowStart(unsigned int systemSize) {
     }
 }
 
-unsigned int rowEnd(unsigned int systemSize) {
-    const auto rank = myRank();
+unsigned int rowEnd(unsigned int systemSize, int rank = myRank()) {
     const auto perRank = rowsPerRank(systemSize);
     const auto remainder = rowRemainder(systemSize);
 
@@ -151,6 +148,42 @@ public:
         return c;
     }
 
+    static vector<double> localMinus(const vector<double> &a, const vector<double> &b) {
+#ifdef DEBUG
+        if (a.size() != b.size()) {
+            throw invalid_argument("Vector sizes are not equal");
+        }
+#endif
+
+        const auto systemSize = static_cast<unsigned int>(a.size());
+        const auto start = rowStart(systemSize);
+        const auto end = rowEnd(systemSize);
+
+        auto c = a;
+        for (auto i = start; i < end; i++) {
+            c[i] -= b[i];
+        }
+        return c;
+    }
+
+    static vector<double> localPlus(const vector<double> &a, const vector<double> &b) {
+#ifdef DEBUG
+        if (a.size() != b.size()) {
+            throw invalid_argument("Vector sizes are not equal");
+        }
+#endif
+
+        const auto systemSize = static_cast<unsigned int>(a.size());
+        const auto start = rowStart(systemSize);
+        const auto end = rowEnd(systemSize);
+
+        auto c = a;
+        for (auto i = start; i < end; i++) {
+            c[i] += b[i];
+        }
+        return c;
+    }
+
     static double sqlength(const vector<double> a) {
         return transposeLeftAndTimes(a, a);
     }
@@ -181,6 +214,18 @@ public:
         auto c = b;
         for (double &i : c) {
             i *= a;
+        }
+        return c;
+    }
+
+    static vector<double> localTimes(const double a, const vector<double> &b) {
+        const auto systemSize = static_cast<unsigned int>(b.size());
+        const auto start = rowStart(systemSize);
+        const auto end = rowEnd(systemSize);
+
+        auto c = b;
+        for (auto i = start; i < end; i++) {
+            c[i] *= a;
         }
         return c;
     }
@@ -338,25 +383,63 @@ private:
     }
 
     vector<double> solve(const Matrix *const m, const vector<double> *b) {
-        auto localMatrix = obtainLocalMatrix(m);
-        auto localB = obtainLocalB(b, static_cast<unsigned int>(localMatrix.m.size()));
+        const auto localMatrix = obtainLocalMatrix(m);
+        const auto localB = obtainLocalB(b, static_cast<unsigned int>(localMatrix.m.size()));
+
+        const auto systemSize = static_cast<unsigned int>(localB.size());
+        const auto start = rowStart(systemSize);
+        const auto end = rowEnd(systemSize);
 
         vector<double> xk(localB.size(), 0.0);
         auto rk = MatrixOps::minus(localB, MatrixOps::times(localMatrix, xk));
         auto pk = rk;
 
+        auto pkRecv = vector<double>(pk.size());
+        auto pkRecvCounts = vector<int>(ranks());
+        auto pkDispls = vector<int>(ranks());
+        for (int i = 0, rowSum = 0; i < pkRecvCounts.size(); i++) {
+            auto rowCountOfRankI = rowEnd(systemSize, i) - rowStart(systemSize, i);
+
+            pkRecvCounts[i] = rowCountOfRankI;
+            pkDispls[i] = rowSum;
+
+            rowSum += rowCountOfRankI;
+        }
+
         const auto bSqLength = MatrixOps::sqlength(localB);
         auto error = numeric_limits<double>::infinity();
         while (error > toll) {
+
+            // Parallelized. Requires full pk
             const auto t = MatrixOps::times(localMatrix, pk);
+
+            // Parallelized. Only requires local rows
             const auto alphak = MatrixOps::sqlength(rk) / MatrixOps::transposeLeftAndTimes(pk, t);
-            xk = MatrixOps::plus(xk, MatrixOps::times(alphak, pk));
-            const auto rk1 = MatrixOps::minus(rk, MatrixOps::times(alphak, t));
+
+            // Parallelized. Only requires local rows
+            xk = MatrixOps::localPlus(xk, MatrixOps::localTimes(alphak, pk));
+
+            // Parallelized. Only requires local rows
+            const auto rk1 = MatrixOps::localMinus(rk, MatrixOps::localTimes(alphak, t));
+
+            // Parallelized. Only requires local rows
             const auto betak = MatrixOps::sqlength(rk1) / MatrixOps::sqlength(rk);
-            pk = MatrixOps::plus(rk1, MatrixOps::times(betak, pk));
+
+            // Parallelized. Only requires local rows
+            pk = MatrixOps::localPlus(rk1, MatrixOps::localTimes(betak, pk));
+
+            // Parallelized. Only requires local rows
             rk = rk1;
 
+            // Parallelized. Only requires local rows
             error = MatrixOps::sqlength(rk) / bSqLength;
+
+            // Redistribute pk
+            MPI_Allgatherv(pk.data() + start, end - start, MPI_DOUBLE, pkRecv.data(), pkRecvCounts.data(),
+                           pkDispls.data(),
+                           MPI_DOUBLE,
+                           MPI_COMM_WORLD);
+            pk = pkRecv;
         }
 
         return xk;
