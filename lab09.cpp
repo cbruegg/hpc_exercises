@@ -82,20 +82,7 @@ class MatrixOps final {
 public:
 
     static vector<double> times(const LocalMatrix &local, const vector<double> &a) {
-        auto localResult = times(local.m, a, local.rowStart, local.rowEnd);
-        const auto systemSize = static_cast<unsigned int>(a.size());
-        const auto perRank = rowsPerRank(systemSize);
-        const auto remainder = rowRemainder(systemSize);
-
-        const auto totalRanks = ranks();
-
-        MPI_Bcast(localResult.data(), perRank + remainder, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        for (auto bcastRank = 1; bcastRank < totalRanks; bcastRank++) {
-            MPI_Bcast(localResult.data() + remainder + bcastRank * perRank,
-                      perRank, MPI_DOUBLE, bcastRank, MPI_COMM_WORLD);
-        }
-
-        return localResult;
+        return times(local.m, a, local.rowStart, local.rowEnd);
     }
 
     static vector<double> times(const Matrix &m, const vector<double> &a, unsigned int rowStart, unsigned int rowEnd) {
