@@ -107,7 +107,7 @@ public:
 
         const auto systemSize = a.size();
         vector<double> c(systemSize);
-//#pragma omp parallel for
+#pragma omp parallel for
         for (auto i = rowStart; i < rowEnd; i++) {
             auto sum = 0.0;
             for (auto j = 0u; j < systemSize; j++) {
@@ -173,7 +173,7 @@ public:
         const auto end = rowEnd(systemSize);
 
         auto localSum = 0.0;
-//#pragma omp parallel for
+#pragma omp parallel for reduction(+: localSum)
         for (auto i = start; i < end; i++) {
             localSum += a[i] * b[i];
         }
