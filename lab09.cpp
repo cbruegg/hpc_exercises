@@ -18,7 +18,7 @@
 
 #endif
 
-#define DEBUG
+#define DEBUG // TODO Disable
 
 using namespace std;
 
