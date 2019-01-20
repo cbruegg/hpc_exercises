@@ -11,7 +11,7 @@ tput setaf 2 2> /dev/null
 N=20000
 
 if hash srun 2>/dev/null; then
-    srun -t1 -N1 ./lab09 ${N}
+    srun -t1 -N2 --ntasks-per-node=2 ./lab09 ${N}
 else
     mpirun -n 4 ./lab09 ${N}
 fi
