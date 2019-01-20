@@ -1,3 +1,5 @@
+#include <utility>
+
 #include<stdio.h>
 #include<stdlib.h>
 #include <random>
@@ -12,6 +14,7 @@
 #ifdef _OPENMP
 
 #include <omp.h>
+#include <mpi.h>
 
 #endif
 
@@ -21,11 +24,60 @@ using namespace std;
 
 using Matrix = vector<vector<double>>;
 
+int myRank() {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    return rank;
+}
+
+unsigned int rowRemainder(unsigned int systemSize) {
+    int totalRanks;
+    MPI_Comm_size(MPI_COMM_WORLD, &totalRanks);
+
+    return systemSize % totalRanks;
+}
+
+unsigned int rowsPerRank(unsigned int systemSize) {
+    int totalRanks;
+    MPI_Comm_size(MPI_COMM_WORLD, &totalRanks);
+
+    return systemSize / totalRanks;
+}
+
+class LocalMatrix final {
+public:
+
+    const Matrix m;
+    const unsigned int rowStart;
+    const unsigned int rowEnd;
+
+    LocalMatrix(Matrix m, const unsigned int rowStart, const unsigned int rowEnd) : m(std::move(m)),
+                                                                                    rowStart(rowStart),
+                                                                                    rowEnd(rowEnd) {}
+};
+
 class MatrixOps final {
 public:
 
-    static vector<double> times(const Matrix &m, const vector<double> &a) {
-        return times(m, a, 0, static_cast<unsigned int>(m.size()));
+    static vector<double> times(const LocalMatrix &local, const vector<double> &a) {
+        auto localResult = times(local.m, a, local.rowStart, local.rowEnd);
+        const auto systemSize = static_cast<unsigned int>(a.size());
+        const auto perRank = rowsPerRank(systemSize);
+        const auto remainder = rowRemainder(systemSize);
+
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+        int totalRanks;
+        MPI_Comm_size(MPI_COMM_WORLD, &totalRanks);
+
+        MPI_Bcast(localResult.data(), perRank + remainder, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        for (auto bcastRank = 1; bcastRank < totalRanks; bcastRank++) {
+            MPI_Bcast(localResult.data() + remainder + bcastRank * perRank,
+                      perRank, MPI_DOUBLE, bcastRank, MPI_COMM_WORLD);
+        }
+
+        return localResult;
     }
 
     static vector<double> times(const Matrix &m, const vector<double> &a, unsigned int rowStart, unsigned int rowEnd) {
@@ -123,7 +175,8 @@ public:
 
 class Main final {
 public:
-    int main(const int argc, const char *const *const argv) {
+    int main(int argc, char **argv) {
+        MPI_Init(&argc, &argv);
 
         const auto systemSize = stoi(argv[1]);
         const auto sigma = 0.6; // TODO
@@ -133,18 +186,31 @@ public:
             return 1;
         }
 
-        const auto matrix = generateMatrix(static_cast<unsigned int>(systemSize), sigma);
-        const auto realSolution = generateSolutionVector(static_cast<unsigned int>(systemSize));
-        const auto b = generateB(matrix, realSolution);
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-        const auto solution = solve(matrix, b);
+        Matrix matrix;
+        vector<double> realSolution;
+        vector<double> solution;
 
-        auto maxErr = 0.0;
-        for (auto i = 0u; i < realSolution.size(); i++) {
-            maxErr = max(maxErr, abs(solution[i] - realSolution[i]));
+        if (rank == 0) {
+            matrix = generateMatrix(static_cast<unsigned int>(systemSize), sigma);
+            realSolution = generateSolutionVector(static_cast<unsigned int>(systemSize));
+            const auto b = generateB(matrix, realSolution);
+
+            solution = solve(&matrix, &b);
+        } else {
+            solve(nullptr, nullptr);
         }
 
-        cout << "Max error: " << maxErr << endl;
+        if (rank == 0) {
+            auto maxErr = 0.0;
+            for (auto i = 0u; i < realSolution.size(); i++) {
+                maxErr = max(maxErr, abs(solution[i] - realSolution[i]));
+            }
+
+            cout << "Max error: " << maxErr << endl;
+        }
 
         return 0;
     }
@@ -153,15 +219,100 @@ private:
 
     const double toll = 10e-9;
 
-    vector<double> solve(const Matrix &m, const vector<double> &b) {
-        vector<double> xk(b.size(), 0.0);
-        auto rk = MatrixOps::minus(b, MatrixOps::times(m, xk));
+    LocalMatrix obtainLocalMatrix(const Matrix *const m) {
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+        int totalRanks;
+        MPI_Comm_size(MPI_COMM_WORLD, &totalRanks);
+
+        unsigned int systemSize;
+        if (rank == 0) {
+            systemSize = static_cast<int>(m->size());
+        }
+        MPI_Bcast(&systemSize, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+        const auto perRank = rowsPerRank(systemSize);
+        const auto remainder = rowRemainder(systemSize);
+        const auto rank0Rows = perRank + remainder;
+
+        vector<double> contigPart;
+        if (rank == 0) {
+            const auto contig = matrixToContiguousVector(*m);
+            contigPart = vector<double>(rank0Rows * systemSize);
+            copy(contig.data(), contig.data() + rank0Rows * systemSize, contigPart.data());
+
+            for (auto targetRank = 1; targetRank < totalRanks; targetRank++) {
+                MPI_Send(contig.data() + remainder + targetRank * perRank * systemSize, perRank * systemSize,
+                         MPI_DOUBLE, targetRank, 0, MPI_COMM_WORLD);
+            }
+        } else {
+            contigPart = vector<double>(perRank);
+            MPI_Recv(contigPart.data(), perRank * systemSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, nullptr);
+        }
+
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        unsigned int rowStart;
+        unsigned int rowEnd;
+        if (rank == 0) {
+            rowStart = 0;
+            rowEnd = rank0Rows;
+        } else {
+            rowStart = remainder + rank * perRank * systemSize;
+            rowEnd = rowStart + perRank;
+        }
+
+        Matrix localMatrixPart(systemSize);
+        for (auto rowIdx = rowStart; rowIdx < rowEnd; rowIdx++) {
+            localMatrixPart[rowIdx] = vector<double>(systemSize);
+
+            copy(contigPart.data() + (rowIdx - rowStart) * systemSize,
+                 contigPart.data() + (rowIdx - rowStart + 1) * systemSize,
+                 localMatrixPart[rowIdx].data());
+        }
+
+        return LocalMatrix(localMatrixPart, rowStart, rowEnd);
+    }
+
+    vector<double> matrixToContiguousVector(const Matrix &m) {
+        const auto systemSize = m.size();
+        const auto totalSize = systemSize * systemSize;
+        vector<double> contig(totalSize);
+        for (auto i = 0u; i < systemSize; i++) {
+            for (auto j = 0u; j < systemSize; j++) {
+                contig[i * systemSize + j] = m[i][j];
+            }
+        }
+        return contig;
+    }
+
+    vector<double> obtainLocalB(const vector<double> *const b, const unsigned int systemSize) {
+        vector<double> localB;
+
+        if (myRank() == 0) {
+            localB = *b;
+        } else {
+            localB = vector<double>(systemSize);
+        }
+
+        MPI_Bcast(localB.data(), systemSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+        return localB;
+    }
+
+    vector<double> solve(const Matrix *const m, const vector<double> *b) {
+        auto localMatrix = obtainLocalMatrix(m);
+        auto localB = obtainLocalB(b, static_cast<unsigned int>(localMatrix.m.size()));
+
+        vector<double> xk(localB.size(), 0.0);
+        auto rk = MatrixOps::minus(localB, MatrixOps::times(localMatrix, xk));
         auto pk = rk;
 
-        const auto bSqLength = MatrixOps::sqlength(b);
+        const auto bSqLength = MatrixOps::sqlength(localB);
         auto error = numeric_limits<double>::infinity();
         while (error > toll) {
-            const auto t = MatrixOps::times(m, pk);
+            const auto t = MatrixOps::times(localMatrix, pk);
             const auto alphak = MatrixOps::sqlength(rk) / MatrixOps::transposeLeftAndTimes(pk, t);
             xk = MatrixOps::plus(xk, MatrixOps::times(alphak, pk));
             const auto rk1 = MatrixOps::minus(rk, MatrixOps::times(alphak, t));
@@ -228,6 +379,6 @@ private:
 
 };
 
-int main(int argc, const char *const *const argv) {
+int main(int argc, char **argv) {
     return Main().main(argc, argv);
 }
