@@ -19,11 +19,28 @@
 #endif
 
 #define DEBUG false
-#define OUTPUT_TIME true
+#define OUTPUT_TIME false
 
 /////////////////////////////////
 // MEASUREMENTS
-// 2 nodes, 1 process each:
+// Size of matrix A: 20,000 x 20,000
+//
+// 2 nodes, 1 process(es) each: 9880 ms <- Uses one CPU -> 20 threads
+// 2 nodes, 2 process(es) each: 5937 ms <- Uses both CPUs -> 40 threads -> Perfect use of the 40 CPU cores
+// 2 nodes, 4 process(es) each: 6684 ms <- Went up again (likely because of threads competing for CPU cores)
+//
+// 1 node(s), 2 process(es) each: 7442 ms <- Uses both CPUs -> 40 threads
+// 2 node(s), 2 process(es) each: 5986 ms
+// 3 node(s), 2 process(es) each: 5584 ms
+// 4 node(s), 2 process(es) each: 5253 ms <- Performance gains less and less, communication overhead becoming too large
+//
+// 1 node, 2 processes,   1 thread(s) per process:  8992 ms
+// 1 node, 2 processes,   2 thread(s) per process:  8166 ms
+// 1 node, 2 processes,   5 thread(s) per process:  7668 ms
+// 1 node, 2 processes,  10 thread(s) per process:  7539 ms <- No more real performance gain by increasing thread count.
+// 1 node, 2 processes,  20 thread(s) per process:  7673 ms    This implementation was focused on parallelization
+// 1 node, 2 processes, 100 thread(s) per process:  8070 ms    using MPI.
+// 1 node, 2 processes, 500 thread(s) per process: 12427 ms
 /////////////////////////////////
 
 using namespace std;
