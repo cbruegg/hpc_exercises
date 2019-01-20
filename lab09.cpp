@@ -30,18 +30,18 @@ int myRank() {
     return rank;
 }
 
-unsigned int rowRemainder(unsigned int systemSize) {
+int ranks() {
     int totalRanks;
     MPI_Comm_size(MPI_COMM_WORLD, &totalRanks);
+    return totalRanks;
+}
 
-    return systemSize % totalRanks;
+unsigned int rowRemainder(unsigned int systemSize) {
+    return systemSize % ranks();
 }
 
 unsigned int rowsPerRank(unsigned int systemSize) {
-    int totalRanks;
-    MPI_Comm_size(MPI_COMM_WORLD, &totalRanks);
-
-    return systemSize / totalRanks;
+    return systemSize / ranks();
 }
 
 class LocalMatrix final {
@@ -65,11 +65,7 @@ public:
         const auto perRank = rowsPerRank(systemSize);
         const auto remainder = rowRemainder(systemSize);
 
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-        int totalRanks;
-        MPI_Comm_size(MPI_COMM_WORLD, &totalRanks);
+        const auto totalRanks = ranks();
 
         MPI_Bcast(localResult.data(), perRank + remainder, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         for (auto bcastRank = 1; bcastRank < totalRanks; bcastRank++) {
@@ -220,11 +216,8 @@ private:
     const double toll = 10e-9;
 
     LocalMatrix obtainLocalMatrix(const Matrix *const m) {
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-        int totalRanks;
-        MPI_Comm_size(MPI_COMM_WORLD, &totalRanks);
+        const auto rank = myRank();
+        const auto totalRanks = ranks();
 
         unsigned int systemSize;
         if (rank == 0) {
