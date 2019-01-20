@@ -23,7 +23,12 @@ using Matrix = vector<vector<double>>;
 
 class MatrixOps final {
 public:
+
     static vector<double> times(const Matrix &m, const vector<double> &a) {
+        return times(m, a, 0, static_cast<unsigned int>(m.size()));
+    }
+
+    static vector<double> times(const Matrix &m, const vector<double> &a, unsigned int rowStart, unsigned int rowEnd) {
 #ifdef DEBUG
         if (m.size() != a.size() || m[0].size() != a.size()) {
             throw invalid_argument("Sizes are not equal");
@@ -32,7 +37,7 @@ public:
 
         const auto systemSize = a.size();
         vector<double> c(systemSize);
-        for (auto i = 0u; i < systemSize; i++) {
+        for (auto i = rowStart; i < rowEnd; i++) {
             auto sum = 0.0;
             for (auto j = 0u; j < systemSize; j++) {
                 sum += m[i][j] * a[j];
