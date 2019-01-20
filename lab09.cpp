@@ -253,7 +253,8 @@ private:
             copy(contig.data(), contig.data() + rank0Rows * systemSize, contigPart.data());
 
             for (auto targetRank = 1; targetRank < totalRanks; targetRank++) {
-                MPI_Send(contig.data() + remainder + targetRank * perRank * systemSize, perRank * systemSize,
+                MPI_Send(contig.data() + remainder * systemSize + targetRank * perRank * systemSize,
+                         perRank * systemSize,
                          MPI_DOUBLE, targetRank, 0, MPI_COMM_WORLD);
             }
         } else {
