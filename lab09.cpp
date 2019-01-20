@@ -15,6 +15,8 @@
 
 #endif
 
+#define DEBUG
+
 using namespace std;
 
 using Matrix = vector<vector<double>>;
@@ -22,9 +24,11 @@ using Matrix = vector<vector<double>>;
 class MatrixOps final {
 public:
     static vector<double> times(const Matrix &m, const vector<double> &a) {
+#ifdef DEBUG
         if (m.size() != a.size() || m[0].size() != a.size()) {
             throw invalid_argument("Sizes are not equal");
         }
+#endif
 
         const auto systemSize = a.size();
         vector<double> c(systemSize);
@@ -40,9 +44,11 @@ public:
     }
 
     static vector<double> minus(const vector<double> &a, const vector<double> &b) {
+#ifdef DEBUG
         if (a.size() != b.size()) {
             throw invalid_argument("Vector sizes are not equal");
         }
+#endif
 
         const auto systemSize = a.size();
         auto c = a;
@@ -53,9 +59,11 @@ public:
     }
 
     static vector<double> plus(const vector<double> &a, const vector<double> &b) {
+#ifdef DEBUG
         if (a.size() != b.size()) {
             throw invalid_argument("Vector sizes are not equal");
         }
+#endif
 
         const auto systemSize = a.size();
         auto c = a;
@@ -74,9 +82,11 @@ public:
     }
 
     static double transposeLeftAndTimes(const vector<double> &a, const vector<double> &b) {
+#ifdef DEBUG
         if (a.size() != b.size()) {
             throw invalid_argument("Vector sizes are not equal");
         }
+#endif
 
         const auto systemSize = a.size();
         auto sum = 0.0;
