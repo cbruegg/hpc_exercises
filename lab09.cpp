@@ -118,21 +118,6 @@ public:
         return c;
     }
 
-    static vector<double> minus(const vector<double> &a, const vector<double> &b) {
-#ifdef DEBUG
-        if (a.size() != b.size()) {
-            throw invalid_argument("Vector sizes are not equal");
-        }
-#endif
-
-        const auto systemSize = a.size();
-        auto c = a;
-        for (auto i = 0u; i < systemSize; i++) {
-            c[i] -= b[i];
-        }
-        return c;
-    }
-
     static vector<double> localMinus(const vector<double> &a, const vector<double> &b) {
 #ifdef DEBUG
         if (a.size() != b.size()) {
@@ -345,7 +330,8 @@ private:
         return contig;
     }
 
-    vector<double> obtainLocalB(const vector<double> *const b, const unsigned int systemSize) {
+    vector<double> obtainLocalB(const vector<double> *const b, const unsigned int systemSize,
+                                const vector<int> &vecRowRecvCounts, const vector<int> &vecRecvDspls) {
         vector<double> localB;
 
         if (myRank() == 0) {
@@ -354,24 +340,19 @@ private:
             localB = vector<double>(systemSize);
         }
 
-        MPI_Bcast(localB.data(), systemSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        const auto start = rowStart(systemSize);
+        const auto end = rowEnd(systemSize);
+        MPI_Scatterv(localB.data(), vecRowRecvCounts.data(), vecRecvDspls.data(), MPI_DOUBLE, localB.data() + start,
+                     end - start, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         return localB;
     }
 
     vector<double> solve(const Matrix *const m, const vector<double> *b) {
         const auto localMatrix = obtainLocalMatrix(m);
-        const auto localB = obtainLocalB(b, static_cast<unsigned int>(localMatrix.m.size()));
+        const auto systemSize = static_cast<unsigned int>(localMatrix.m.size());
 
-        const auto systemSize = static_cast<unsigned int>(localB.size());
-        const auto start = rowStart(systemSize);
-        const auto end = rowEnd(systemSize);
-
-        vector<double> xk(localB.size(), 0.0);
-        auto rk = MatrixOps::minus(localB, MatrixOps::times(localMatrix, xk));
-        auto pk = rk;
-
-        auto vecRecvBuf = vector<double>(pk.size());
+        auto vecRecvBuf = vector<double>(systemSize);
         auto vecRowRecvCounts = vector<int>(ranks());
         auto vecRecvDispls = vector<int>(ranks());
         for (int i = 0, rowSum = 0; i < vecRowRecvCounts.size(); i++) {
@@ -383,9 +364,25 @@ private:
             rowSum += rowCountOfRankI;
         }
 
+        const auto localB = obtainLocalB(b, static_cast<unsigned int>(localMatrix.m.size()),
+                                         vecRowRecvCounts, vecRecvDispls);
+
+        const auto start = rowStart(systemSize);
+        const auto end = rowEnd(systemSize);
+
+        vector<double> xk(localB.size(), 0.0);
+        auto rk = MatrixOps::localMinus(localB, MatrixOps::times(localMatrix, xk));
+        auto pk = rk;
+
         const auto bSqLength = MatrixOps::sqlength(localB);
         auto error = numeric_limits<double>::infinity();
         while (error > toll) {
+            // Redistribute pk
+            MPI_Allgatherv(pk.data() + start, end - start, MPI_DOUBLE, vecRecvBuf.data(), vecRowRecvCounts.data(),
+                           vecRecvDispls.data(),
+                           MPI_DOUBLE,
+                           MPI_COMM_WORLD);
+            pk = vecRecvBuf;
 
             // Parallelized. Requires full pk
             const auto t = MatrixOps::times(localMatrix, pk);
@@ -410,13 +407,6 @@ private:
 
             // Parallelized. Only requires local rows
             error = MatrixOps::sqlength(rk) / bSqLength;
-
-            // Redistribute pk
-            MPI_Allgatherv(pk.data() + start, end - start, MPI_DOUBLE, vecRecvBuf.data(), vecRowRecvCounts.data(),
-                           vecRecvDispls.data(),
-                           MPI_DOUBLE,
-                           MPI_COMM_WORLD);
-            pk = vecRecvBuf;
         }
 
         // Redistribute xk
