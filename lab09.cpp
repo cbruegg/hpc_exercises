@@ -19,6 +19,7 @@
 #endif
 
 #define DEBUG false
+#define OUTPUT_TIME true
 
 using namespace std;
 
@@ -299,7 +300,7 @@ private:
 
     vector<double> obtainLocalB(const vector<double> *const b, const unsigned int systemSize,
                                 const vector<int> &vecRowRecvCounts, const vector<int> &vecRecvDspls) {
-        const double* bData;
+        const double *bData;
 
         if (myRank() == 0) {
             bData = b->data();
@@ -441,5 +442,16 @@ private:
 };
 
 int main(int argc, char **argv) {
+#if OUTPUT_TIME
+    const auto start = chrono::steady_clock::now();
+    const auto exitCode = Main().main(argc, argv);
+    const auto end = chrono::steady_clock::now();
+    cout << "Runtime: "
+         << chrono::duration_cast<chrono::milliseconds>(end - start).count()
+         << " ms"
+         << endl;
+    return exitCode;
+#else
     return Main().main(argc, argv);
+#endif
 }
