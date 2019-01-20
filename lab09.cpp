@@ -131,7 +131,7 @@ public:
         const auto end = rowEnd(systemSize);
 
         auto c = a;
-//#pragma omp parallel for
+#pragma omp parallel for
         for (auto i = start; i < end; i++) {
             c[i] -= b[i];
         }
@@ -150,7 +150,7 @@ public:
         const auto end = rowEnd(systemSize);
 
         auto c = a;
-//#pragma omp parallel for
+#pragma omp parallel for
         for (auto i = start; i < end; i++) {
             c[i] += b[i];
         }
@@ -190,7 +190,7 @@ public:
         const auto end = rowEnd(systemSize);
 
         auto c = b;
-//#pragma omp parallel for
+#pragma omp parallel for
         for (auto i = start; i < end; i++) {
             c[i] *= a;
         }
