@@ -21,6 +21,11 @@
 #define DEBUG false
 #define OUTPUT_TIME true
 
+/////////////////////////////////
+// MEASUREMENTS
+// 2 nodes,
+/////////////////////////////////
+
 using namespace std;
 
 using Matrix = vector<vector<double>>;
@@ -446,10 +451,12 @@ int main(int argc, char **argv) {
     const auto start = chrono::steady_clock::now();
     const auto exitCode = Main().main(argc, argv);
     const auto end = chrono::steady_clock::now();
-    cout << "Runtime: "
-         << chrono::duration_cast<chrono::milliseconds>(end - start).count()
-         << " ms"
-         << endl;
+    if (myRank() == 0) {
+        cout << "Runtime: "
+             << chrono::duration_cast<chrono::milliseconds>(end - start).count()
+             << " ms"
+             << endl;
+    }
     return exitCode;
 #else
     return Main().main(argc, argv);
