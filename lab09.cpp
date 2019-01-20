@@ -217,7 +217,7 @@ public:
         MPI_Init(&argc, &argv);
 
         const auto systemSize = stoi(argv[1]);
-        const auto sigma = 0.6; // TODO
+        const auto sigma = 0.6;
 
         if (systemSize <= 0) {
             cerr << "System size needs to be > 0";
