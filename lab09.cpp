@@ -23,7 +23,7 @@
 
 /////////////////////////////////
 // MEASUREMENTS
-// 2 nodes,
+// 2 nodes, 1 process each:
 /////////////////////////////////
 
 using namespace std;
@@ -195,8 +195,6 @@ public:
 class Main final {
 public:
     int main(int argc, char **argv) {
-        MPI_Init(&argc, &argv);
-
         const auto systemSize = stoi(argv[1]);
         const auto sigma = 0.6;
 
@@ -231,7 +229,6 @@ public:
             cout << "Max error: " << maxErr << endl;
         }
 
-        MPI_Finalize();
         return 0;
     }
 
@@ -447,9 +444,12 @@ private:
 };
 
 int main(int argc, char **argv) {
+    MPI_Init(&argc, &argv);
 #if OUTPUT_TIME
     const auto start = chrono::steady_clock::now();
+#endif
     const auto exitCode = Main().main(argc, argv);
+#if OUTPUT_TIME
     const auto end = chrono::steady_clock::now();
     if (myRank() == 0) {
         cout << "Runtime: "
@@ -457,8 +457,7 @@ int main(int argc, char **argv) {
              << " ms"
              << endl;
     }
-    return exitCode;
-#else
-    return Main().main(argc, argv);
 #endif
+    MPI_Finalize();
+    return exitCode;
 }
