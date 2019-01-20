@@ -44,6 +44,31 @@ unsigned int rowsPerRank(unsigned int systemSize) {
     return systemSize / ranks();
 }
 
+unsigned int rowStart(unsigned int systemSize) {
+    const auto rank = myRank();
+
+    if (rank == 0) {
+        return 0;
+    } else {
+        const auto perRank = rowsPerRank(systemSize);
+        const auto remainder = rowRemainder(systemSize);
+        return remainder + rank * perRank;
+    }
+}
+
+unsigned int rowEnd(unsigned int systemSize) {
+    const auto rank = myRank();
+    const auto perRank = rowsPerRank(systemSize);
+    const auto remainder = rowRemainder(systemSize);
+
+    if (rank == 0) {
+        return perRank + remainder;
+    } else {
+        const auto rowStart = remainder + rank * perRank;
+        return rowStart + perRank;
+    }
+}
+
 class LocalMatrix final {
 public:
 
@@ -127,11 +152,7 @@ public:
     }
 
     static double sqlength(const vector<double> a) {
-        auto sum = 0.0;
-        for (const auto elem : a) {
-            sum += elem * elem;
-        }
-        return sum;
+        return transposeLeftAndTimes(a, a);
     }
 
     static double transposeLeftAndTimes(const vector<double> &a, const vector<double> &b) {
@@ -141,13 +162,19 @@ public:
         }
 #endif
 
-        const auto systemSize = a.size();
-        auto sum = 0.0;
-        for (auto i = 0u; i < systemSize; i++) {
-            sum += a[i] * b[i];
+        const auto systemSize = static_cast<unsigned int>(a.size());
+        const auto start = rowStart(systemSize);
+        const auto end = rowEnd(systemSize);
+
+        auto localSum = 0.0;
+        for (auto i = start; i < end; i++) {
+            localSum += a[i] * b[i];
         }
 
-        return sum;
+        auto globalSum = localSum;
+        MPI_Allreduce(&localSum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+        return globalSum;
     }
 
     static vector<double> times(const double a, const vector<double> &b) {
