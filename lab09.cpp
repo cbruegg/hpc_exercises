@@ -133,21 +133,6 @@ public:
         return c;
     }
 
-    static vector<double> plus(const vector<double> &a, const vector<double> &b) {
-#ifdef DEBUG
-        if (a.size() != b.size()) {
-            throw invalid_argument("Vector sizes are not equal");
-        }
-#endif
-
-        const auto systemSize = a.size();
-        auto c = a;
-        for (auto i = 0u; i < systemSize; i++) {
-            c[i] += b[i];
-        }
-        return c;
-    }
-
     static vector<double> localMinus(const vector<double> &a, const vector<double> &b) {
 #ifdef DEBUG
         if (a.size() != b.size()) {
@@ -208,14 +193,6 @@ public:
         MPI_Allreduce(&localSum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
         return globalSum;
-    }
-
-    static vector<double> times(const double a, const vector<double> &b) {
-        auto c = b;
-        for (double &i : c) {
-            i *= a;
-        }
-        return c;
     }
 
     static vector<double> localTimes(const double a, const vector<double> &b) {
