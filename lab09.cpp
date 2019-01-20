@@ -27,13 +27,13 @@ using Matrix = vector<vector<double>>;
 unsigned int myRank() {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    return rank;
+    return static_cast<unsigned int>(rank);
 }
 
 unsigned int ranks() {
     int totalRanks;
     MPI_Comm_size(MPI_COMM_WORLD, &totalRanks);
-    return totalRanks;
+    return static_cast<unsigned int>(totalRanks);
 }
 
 unsigned int rowRemainder(unsigned int systemSize) {
@@ -144,7 +144,7 @@ public:
         return c;
     }
 
-    static double sqlength(const vector<double> a) {
+    static double sqlength(const vector<double> &a) {
         return transposeLeftAndTimes(a, a);
     }
 
@@ -182,31 +182,6 @@ public:
             c[i] *= a;
         }
         return c;
-    }
-
-    static void println(const Matrix &m) {
-        for (auto i = 0u; i < m.size(); i++) {
-            for (auto j = 0u; j < m.size(); j++) {
-                cout << setw(5) << m[i][j] << " ";
-            }
-            cout << endl;
-        }
-    }
-
-    static void println(const LocalMatrix &m) {
-        const auto systemSize = m.m[m.rowStart].size();
-        for (auto i = 0u; i < systemSize; i++) {
-            for (auto j = 0u; j < systemSize; j++) {
-                double value;
-                if (i < m.rowStart || i >= m.rowEnd) {
-                    value = 1 / 0.0;
-                } else {
-                    value = m.m[i][j];
-                }
-                cout << setw(5) << value << " ";
-            }
-            cout << endl;
-        }
     }
 
 };
