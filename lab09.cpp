@@ -299,17 +299,18 @@ private:
 
     vector<double> obtainLocalB(const vector<double> *const b, const unsigned int systemSize,
                                 const vector<int> &vecRowRecvCounts, const vector<int> &vecRecvDspls) {
-        vector<double> localB;
+        const double* bData;
 
         if (myRank() == 0) {
-            localB = *b;
+            bData = b->data();
         } else {
-            localB = vector<double>(systemSize);
+            bData = nullptr;
         }
 
         const auto start = rowStart(systemSize);
         const auto end = rowEnd(systemSize);
-        MPI_Scatterv(localB.data(), vecRowRecvCounts.data(), vecRecvDspls.data(), MPI_DOUBLE, localB.data() + start,
+        auto localB = vector<double>(systemSize);
+        MPI_Scatterv(bData, vecRowRecvCounts.data(), vecRecvDspls.data(), MPI_DOUBLE, localB.data() + start,
                      end - start, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         return localB;
