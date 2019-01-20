@@ -260,7 +260,7 @@ private:
             }
         } else {
             contigPart = vector<double>(perRank * systemSize);
-            MPI_Recv(contigPart.data(), perRank * systemSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, nullptr);
+            MPI_Recv(contigPart.data(), perRank * systemSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
         unsigned int rowStart;
