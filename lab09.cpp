@@ -394,14 +394,14 @@ private:
         auto rk = MatrixOps::minus(localB, MatrixOps::times(localMatrix, xk));
         auto pk = rk;
 
-        auto pkRecv = vector<double>(pk.size());
-        auto pkRecvCounts = vector<int>(ranks());
-        auto pkDispls = vector<int>(ranks());
-        for (int i = 0, rowSum = 0; i < pkRecvCounts.size(); i++) {
+        auto vecRecvBuf = vector<double>(pk.size());
+        auto vecRowRecvCounts = vector<int>(ranks());
+        auto vecRecvDispls = vector<int>(ranks());
+        for (int i = 0, rowSum = 0; i < vecRowRecvCounts.size(); i++) {
             auto rowCountOfRankI = rowEnd(systemSize, i) - rowStart(systemSize, i);
 
-            pkRecvCounts[i] = rowCountOfRankI;
-            pkDispls[i] = rowSum;
+            vecRowRecvCounts[i] = rowCountOfRankI;
+            vecRecvDispls[i] = rowSum;
 
             rowSum += rowCountOfRankI;
         }
@@ -435,12 +435,19 @@ private:
             error = MatrixOps::sqlength(rk) / bSqLength;
 
             // Redistribute pk
-            MPI_Allgatherv(pk.data() + start, end - start, MPI_DOUBLE, pkRecv.data(), pkRecvCounts.data(),
-                           pkDispls.data(),
+            MPI_Allgatherv(pk.data() + start, end - start, MPI_DOUBLE, vecRecvBuf.data(), vecRowRecvCounts.data(),
+                           vecRecvDispls.data(),
                            MPI_DOUBLE,
                            MPI_COMM_WORLD);
-            pk = pkRecv;
+            pk = vecRecvBuf;
         }
+
+        // Redistribute xk
+        MPI_Allgatherv(xk.data() + start, end - start, MPI_DOUBLE, vecRecvBuf.data(), vecRowRecvCounts.data(),
+                       vecRecvDispls.data(),
+                       MPI_DOUBLE,
+                       MPI_COMM_WORLD);
+        xk = vecRecvBuf;
 
         return xk;
     }
