@@ -10,15 +10,15 @@
 #include <vector>
 #include <sstream>
 #include <chrono>
+#include <mpi.h>
 
 #ifdef _OPENMP
 
 #include <omp.h>
-#include <mpi.h>
 
 #endif
 
-#define DEBUG // TODO Disable
+#define DEBUG true // TODO Disable
 
 using namespace std;
 
@@ -107,6 +107,7 @@ public:
 
         const auto systemSize = a.size();
         vector<double> c(systemSize);
+//#pragma omp parallel for
         for (auto i = rowStart; i < rowEnd; i++) {
             auto sum = 0.0;
             for (auto j = 0u; j < systemSize; j++) {
@@ -119,7 +120,7 @@ public:
     }
 
     static vector<double> localMinus(const vector<double> &a, const vector<double> &b) {
-#ifdef DEBUG
+#if DEBUG
         if (a.size() != b.size()) {
             throw invalid_argument("Vector sizes are not equal");
         }
@@ -130,6 +131,7 @@ public:
         const auto end = rowEnd(systemSize);
 
         auto c = a;
+//#pragma omp parallel for
         for (auto i = start; i < end; i++) {
             c[i] -= b[i];
         }
@@ -137,7 +139,7 @@ public:
     }
 
     static vector<double> localPlus(const vector<double> &a, const vector<double> &b) {
-#ifdef DEBUG
+#if DEBUG
         if (a.size() != b.size()) {
             throw invalid_argument("Vector sizes are not equal");
         }
@@ -148,6 +150,7 @@ public:
         const auto end = rowEnd(systemSize);
 
         auto c = a;
+//#pragma omp parallel for
         for (auto i = start; i < end; i++) {
             c[i] += b[i];
         }
@@ -159,7 +162,7 @@ public:
     }
 
     static double transposeLeftAndTimes(const vector<double> &a, const vector<double> &b) {
-#ifdef DEBUG
+#if DEBUG
         if (a.size() != b.size()) {
             throw invalid_argument("Vector sizes are not equal");
         }
@@ -170,6 +173,7 @@ public:
         const auto end = rowEnd(systemSize);
 
         auto localSum = 0.0;
+//#pragma omp parallel for
         for (auto i = start; i < end; i++) {
             localSum += a[i] * b[i];
         }
@@ -186,6 +190,7 @@ public:
         const auto end = rowEnd(systemSize);
 
         auto c = b;
+//#pragma omp parallel for
         for (auto i = start; i < end; i++) {
             c[i] *= a;
         }
