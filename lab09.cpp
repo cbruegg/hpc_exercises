@@ -167,6 +167,22 @@ public:
         }
     }
 
+    static void println(const LocalMatrix &m) {
+        const auto systemSize = m.m[m.rowStart].size();
+        for (auto i = 0u; i < systemSize; i++) {
+            for (auto j = 0u; j < systemSize; j++) {
+                double value;
+                if (i < m.rowStart || i >= m.rowEnd) {
+                    value = 1 / 0.0;
+                } else {
+                    value = m.m[i][j];
+                }
+                cout << setw(5) << value << " ";
+            }
+            cout << endl;
+        }
+    }
+
 };
 
 class Main final {
@@ -196,7 +212,7 @@ public:
 
             solution = solve(&matrix, &b);
         } else {
-            solve(nullptr, nullptr);
+            solution = solve(nullptr, nullptr);
         }
 
         if (rank == 0) {
