@@ -86,7 +86,7 @@ public:
     }
 
     static vector<double> times(const Matrix &m, const vector<double> &a, unsigned int rowStart, unsigned int rowEnd) {
-#ifdef DEBUG
+#if DEBUG
         if (m.size() != a.size() || m[rowStart].size() != a.size()) {
             throw invalid_argument("Sizes are not equal");
         }
